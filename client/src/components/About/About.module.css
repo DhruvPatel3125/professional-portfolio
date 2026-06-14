@@ -1,0 +1,137 @@
+@import "../../vars.css";
+
+.container {
+  position: relative;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 60px 8%;
+  margin-top: 100px;
+  z-index: 1;
+  margin-left: 10%;
+  margin-right: 10%;
+  box-shadow: var(--glass-shadow);
+}
+
+.title {
+  color: var(--color-text);
+  font-size: 38px;
+  font-weight: 800;
+  letter-spacing: 1.75px;
+  text-transform: uppercase;
+  background: linear-gradient(90deg, var(--color-accent-cyan), var(--color-accent-purple));
+  -webkit-text-fill-color: transparent;
+  -webkit-background-clip: text;
+  margin-bottom: 40px;
+}
+
+.content {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 50px;
+}
+
+.aboutImage {
+  width: 32%;
+  max-width: 300px;
+  border-radius: 20px;
+  animation: floatSmall 5s ease-in-out infinite;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+@keyframes floatSmall {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.aboutItems {
+  color: var(--color-text);
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  list-style: none;
+  padding: 0;
+  flex: 1;
+}
+
+.aboutItem {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  border-radius: 16px;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--glass-border);
+  transition: all var(--transition-normal);
+  gap: 20px;
+}
+
+.aboutItem:hover {
+  background: rgba(25, 55, 109, 0.25);
+  border-color: var(--color-accent-cyan);
+  box-shadow: var(--glass-glow-cyan);
+  transform: translateX(5px);
+}
+
+.iconContainer {
+  background-color: rgba(11, 36, 71, 0.5);
+  border-radius: 50%;
+  width: 60px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.iconContainer img {
+  width: 30px;
+  height: 30px;
+}
+
+.aboutItemText h3 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 6px;
+  color: var(--color-text);
+}
+
+.aboutItemText p {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-text-secondary);
+}
+
+@media screen and (max-width: 900px) {
+  .content {
+    gap: 30px;
+  }
+}
+
+@media screen and (max-width: 830px) {
+  .container {
+    padding: 40px 24px;
+    margin-left: 5%;
+    margin-right: 5%;
+  }
+
+  .content {
+    flex-direction: column;
+  }
+
+  .aboutImage {
+    display: none;
+  }
+
+  .aboutItems {
+    margin-top: 0;
+  }
+
+  .aboutItem:hover {
+    transform: none;
+  }
+}
