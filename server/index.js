@@ -7,28 +7,11 @@ import chatRouter from './routes/chat.js';
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-// CORS configuration
-const allowedOrigins = [
-  process.env.FRONTEND_URL || 'http://localhost:5173',
-  'http://localhost:5173',
-  'http://127.0.0.1:5173'
-].map(url => url.trim().replace(/\/$/, '')); // Remove trailing slash
-
+// CORS configuration - Allow all origins for public portfolio chatbot
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    const normalizedOrigin = origin.trim().replace(/\/$/, '');
-    
-    if (allowedOrigins.includes(normalizedOrigin)) {
-      return callback(null, true);
-    }
-    
-    console.warn(`[CORS Blocked] Request from origin '${origin}' is not allowed. Allowed origins are:`, allowedOrigins);
-    return callback(null, false); // Reject without throwing a 500 error
-  },
-  credentials: true
+  origin: '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
 // Body parsers

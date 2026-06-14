@@ -133,7 +133,8 @@ export default function ChatBot() {
         }));
 
       // Call Express backend endpoint /api/chat
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
       const response = await fetch(`${apiBaseUrl}/api/chat`, {
         method: 'POST',
         headers: {
