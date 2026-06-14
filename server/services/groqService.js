@@ -77,10 +77,10 @@ export async function generateChatCompletion(userMessage, history = [], context)
     });
 
     // 3. Make API request to Groq Cloud
-    // Using llama-3.3-70b-versatile for high reasoning quality and low latency
+    // Using llama-3.1-8b-instant for fast responses and much higher rate limits on the free tier
     const chatCompletion = await client.chat.completions.create({
       messages,
-      model: 'llama-3.3-70b-versatile',
+      model: 'llama-3.1-8b-instant',
       temperature: 0.2, // Low temperature to minimize creative liberties and stick to context
       max_tokens: 800,
       top_p: 1,
