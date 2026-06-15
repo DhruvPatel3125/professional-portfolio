@@ -22,6 +22,28 @@
   position: fixed;
   height: 100vh;
   z-index: 10;
+  left: 0;
+  transition: left var(--transition-normal);
+}
+
+.menuToggleBtn {
+  display: none;
+}
+
+.backToSessionsBtn {
+  display: none;
+}
+
+.sidebarBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1000;
 }
 
 .sidebarBrand {
@@ -211,11 +233,152 @@
 
 @media screen and (max-width: 992px) {
   .sidebar {
-    display: none; /* In future we can add responsive sidebar toggles */
+    left: -280px;
+    z-index: 1001;
+    background: rgba(2, 8, 19, 0.95);
+    border-right: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  .sidebarOpen {
+    left: 0;
   }
   .mainContent {
     margin-left: 0;
     padding: 30px 20px;
+  }
+  .menuToggleBtn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--color-text);
+    padding: 10px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-right: 15px;
+    flex-shrink: 0;
+  }
+  .menuToggleBtn:hover {
+    background: rgba(0, 242, 254, 0.15);
+    border-color: var(--color-accent-cyan);
+    color: var(--color-accent-cyan);
+    box-shadow: var(--glass-glow-cyan);
+  }
+  .topBar {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .pageInfo {
+    flex: 1;
+    min-width: 200px;
+  }
+  .pageInfo h1 {
+    font-size: 22px;
+  }
+  .pageInfo p {
+    font-size: 12px;
+  }
+  .topBarActions {
+    margin-left: auto;
+  }
+}
+
+@media screen and (max-width: 900px) {
+  .chatsWorkspace {
+    display: block !important;
+    height: calc(100vh - 220px);
+    min-height: auto;
+  }
+  
+  .showViewer .chatsSidebarCard {
+    display: none !important;
+  }
+  
+  .showViewer .chatViewerCard {
+    display: flex !important;
+    height: 100% !important;
+  }
+  
+  .showSidebar .chatViewerCard {
+    display: none !important;
+  }
+  
+  .showSidebar .chatsSidebarCard {
+    display: flex !important;
+    height: 100% !important;
+  }
+  
+  .backToSessionsBtn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--glass-border);
+    color: var(--color-text-secondary);
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .backToSessionsBtn:hover {
+    background: rgba(0, 242, 254, 0.15);
+    color: var(--color-accent-cyan);
+    border-color: var(--color-accent-cyan);
+    box-shadow: var(--glass-glow-cyan);
+  }
+}
+
+@media screen and (max-width: 550px) {
+  .overviewGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .metricCard {
+    padding: 20px 24px;
+  }
+  .metricValue {
+    font-size: 36px;
+  }
+  .topBarActions {
+    width: 100%;
+    margin-top: 10px;
+  }
+  .topBarRefreshBtn {
+    width: 100%;
+    justify-content: center;
+  }
+  .inquiriesGrid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .sysCard {
+    padding: 12px 16px;
+  }
+  .systemStatusPanel {
+    padding: 20px;
+  }
+  .logTerminal {
+    padding: 15px;
+    height: 200px;
+  }
+  .visitorDetailsRow {
+    gap: 12px;
+  }
+  .visitorAvatar {
+    width: 38px;
+    height: 38px;
+    font-size: 12px;
+  }
+  .viewerHeaderInfo {
+    padding: 16px;
+    gap: 12px;
   }
 }
 
@@ -644,8 +807,16 @@
   padding: 24px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.visitorDetailsRow {
+  display: flex;
   align-items: center;
   gap: 16px;
+  width: 100%;
 }
 
 .visitorAvatar {
