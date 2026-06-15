@@ -61,6 +61,40 @@ function parseMarkdown(text) {
   return `<p>${html}</p>`;
 }
 
+function getDeviceMeta() {
+  const userAgent = navigator.userAgent;
+  let browser = 'Unknown Browser';
+  let os = 'Unknown OS';
+  let device = 'Desktop';
+
+  // Device determination
+  const width = window.innerWidth;
+  if (width < 768) {
+    device = 'Mobile';
+  } else if (width >= 768 && width <= 1024) {
+    device = 'Tablet';
+  } else {
+    device = 'Desktop';
+  }
+
+  // OS detection
+  if (userAgent.indexOf('Win') !== -1) os = 'Windows';
+  else if (userAgent.indexOf('Mac') !== -1) os = 'MacOS';
+  else if (userAgent.indexOf('X11') !== -1) os = 'UNIX';
+  else if (userAgent.indexOf('Linux') !== -1) os = 'Linux';
+  else if (/Android/i.test(userAgent)) os = 'Android';
+  else if (/iPhone|iPad|iPod/i.test(userAgent)) os = 'iOS';
+
+  // Browser detection
+  if (userAgent.indexOf('Chrome') !== -1) browser = 'Chrome';
+  else if (userAgent.indexOf('Safari') !== -1) browser = 'Safari';
+  else if (userAgent.indexOf('Firefox') !== -1) browser = 'Firefox';
+  else if (userAgent.indexOf('MSIE') !== -1 || !!document.documentMode === true) browser = 'IE';
+  else if (userAgent.indexOf('Edge') !== -1) browser = 'Edge';
+
+  return { device, browser, os };
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
@@ -77,8 +111,19 @@ export default function ChatBot() {
     "Tell me about his projects",
     "How can I contact him?"
   ]);
+  const [sessionId, setSessionId] = useState('');
 
   const messagesEndRef = useRef(null);
+
+  // Initialize or fetch existing Session ID
+  useEffect(() => {
+    let storedSessionId = localStorage.getItem('portfolio_chatbot_session_id');
+    if (!storedSessionId) {
+      storedSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      localStorage.setItem('portfolio_chatbot_session_id', storedSessionId);
+    }
+    setSessionId(storedSessionId);
+  }, []);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -142,9 +187,12 @@ export default function ChatBot() {
         },
         body: JSON.stringify({
           message: text,
-          history
+          history,
+          sessionId,
+          deviceMeta: getDeviceMeta()
         })
       });
+
 
       if (!response.ok) {
         throw new Error('Failed to get response from server');

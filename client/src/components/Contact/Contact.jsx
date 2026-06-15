@@ -34,17 +34,33 @@ export default function Contact() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
 
     setStatus('sending');
 
-    // Simulate API request
-    setTimeout(() => {
+    try {
+      let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+      const response = await fetch(`${apiBaseUrl}/api/inquiries`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to submit inquiry');
+      }
+
       setStatus('success');
       setFormData({ name: '', email: '', message: '' });
-    }, 1500);
+    } catch (error) {
+      console.error('Error submitting inquiry:', error);
+      setStatus('error');
+    }
   };
 
   return (
@@ -208,6 +224,12 @@ export default function Contact() {
                   {errors.message && <span className={styles.errorMessage}>{errors.message}</span>}
                 </div>
 
+                {status === 'error' && (
+                  <div className={styles.formErrorNotice}>
+                    ⚠️ Failed to send message. Please try again.
+                  </div>
+                )}
+
                 <motion.button
                   type="submit"
                   className={`${styles.submitBtn} ${status === 'sending' ? styles.btnSending : ''}`}
@@ -215,6 +237,7 @@ export default function Contact() {
                   whileHover={{ scale: 1.02, backgroundColor: "var(--color-primary-dark)" }}
                   whileTap={{ scale: 0.98 }}
                 >
+
                   {status === 'sending' ? (
                     <>
                       <div className={styles.spinner} />

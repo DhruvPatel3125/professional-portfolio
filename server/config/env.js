@@ -16,18 +16,22 @@ if (process.env.ALLOW_INSECURE_TLS === 'true') {
 }
 
 const requiredEnvVars = [
-  'GROQ_API_KEY'
+  'GROQ_API_KEY',
+  'MONGODB_URI',
+  'ADMIN_SECRET'
 ];
 
 const missingEnvVars = requiredEnvVars.filter(varName => !process.env[varName]);
 
 if (missingEnvVars.length > 0) {
   console.warn(`[WARNING] Missing environment variables: ${missingEnvVars.join(', ')}`);
-  console.warn('[WARNING] The chatbot will fail to respond unless GROQ_API_KEY is configured.');
+  console.warn('[WARNING] Database connection or Admin features may fail unless these are configured.');
 }
 
 export const config = {
   PORT: process.env.PORT || 3001,
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
-  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173'
+  FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
+  MONGODB_URI: process.env.MONGODB_URI || '',
+  ADMIN_SECRET: process.env.ADMIN_SECRET || 'dhruvAdmin123'
 };

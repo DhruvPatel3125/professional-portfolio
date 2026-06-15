@@ -3,14 +3,20 @@ import './config/env.js';
 import express from 'express';
 import cors from 'cors';
 import chatRouter from './routes/chat.js';
+import inquiryRouter from './routes/inquiry.js';
+import adminRouter from './routes/admin.js';
+import { connectDB } from './config/db.js';
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
+// Initialize MongoDB Connection
+connectDB();
+
 // CORS configuration - Allow all origins for public portfolio chatbot
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'OPTIONS'],
+  methods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
@@ -29,6 +35,8 @@ app.get('/api/health', (req, res) => {
 
 // Routes
 app.use('/api/chat', chatRouter);
+app.use('/api/inquiries', inquiryRouter);
+app.use('/api/admin', adminRouter);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
@@ -43,3 +51,4 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Allowed frontend origin: ${process.env.FRONTEND_URL || 'http://localhost:5173'}`);
 });
+

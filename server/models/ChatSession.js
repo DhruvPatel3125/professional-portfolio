@@ -1,0 +1,41 @@
+import mongoose from 'mongoose';
+
+const chatSessionSchema = new mongoose.Schema({
+  sessionId: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true
+  },
+  ipAddress: {
+    type: String,
+    default: 'Unknown'
+  },
+  device: {
+    type: String,
+    default: 'Desktop'
+  },
+  browser: {
+    type: String,
+    default: 'Unknown'
+  },
+  os: {
+    type: String,
+    default: 'Unknown'
+  },
+  location: {
+    type: String,
+    default: 'Unknown'
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  lastActivityAt: {
+    type: Date,
+    default: Date.now
+  }
+});
+
+const ChatSession = mongoose.model('ChatSession', chatSessionSchema);
+export default ChatSession;

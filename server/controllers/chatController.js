@@ -1,5 +1,8 @@
 import { getFormattedKnowledge } from '../services/knowledgeLoader.js';
 import { generateChatCompletion } from '../services/groqService.js';
+import ChatSession from '../models/ChatSession.js';
+import ChatMessage from '../models/ChatMessage.js';
+import { getIpLocation } from '../services/geoService.js';
 
 /**
  * Controller to handle chatbot questions.
@@ -7,7 +10,7 @@ import { generateChatCompletion } from '../services/groqService.js';
  */
 export async function handleChat(req, res) {
   try {
-    const { message, history } = req.body;
+    const { message, history, sessionId, deviceMeta } = req.body;
 
     // 1. Validation
     if (!message || typeof message !== 'string') {
@@ -20,8 +23,11 @@ export async function handleChat(req, res) {
 
     const cleanedMessage = message.trim();
     const chatHistory = Array.isArray(history) ? history : [];
+    
+    // Ensure we have a fallback session ID if client didn't supply one
+    const activeSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    console.log(`[ChatController] Processing message: "${cleanedMessage.substring(0, 50)}..."`);
+    console.log(`[ChatController] Processing message for session ${activeSessionId}: "${cleanedMessage.substring(0, 50)}..."`);
     const startTime = Date.now();
 
     // 2. Fetch context and generate reply from Groq
@@ -34,13 +40,60 @@ export async function handleChat(req, res) {
     // 3. Generate suggestion chips based on the output to support frontend UI
     const suggestions = generateSuggestions(reply);
 
-    // 4. Return successful response
+    // 4. Save to Database (Asynchronously - wrapped in try/catch for graceful degradation)
+    try {
+      const rawIp = req.headers['x-forwarded-for']
+        ? req.headers['x-forwarded-for'].split(',')[0].trim()
+        : (req.socket.remoteAddress || req.ip);
+
+      // Save user query
+      const userMsg = new ChatMessage({
+        sessionId: activeSessionId,
+        role: 'user',
+        content: cleanedMessage
+      });
+      await userMsg.save();
+
+      // Save bot reply
+      const botMsg = new ChatMessage({
+        sessionId: activeSessionId,
+        role: 'bot',
+        content: reply
+      });
+      await botMsg.save();
+
+      // Update or create ChatSession entry
+      let sessionDoc = await ChatSession.findOne({ sessionId: activeSessionId });
+      if (!sessionDoc) {
+        // Resolve location and details for new session
+        const location = await getIpLocation(rawIp);
+        sessionDoc = new ChatSession({
+          sessionId: activeSessionId,
+          ipAddress: rawIp,
+          device: deviceMeta?.device || 'Desktop',
+          browser: deviceMeta?.browser || 'Unknown',
+          os: deviceMeta?.os || 'Unknown',
+          location
+        });
+      } else {
+        sessionDoc.lastActivityAt = new Date();
+      }
+      await sessionDoc.save();
+
+    } catch (dbError) {
+      console.error('[ChatController] Mongoose storage failed:', dbError.message || dbError);
+      // Fail silently to the user so chatbot still answers even if DB goes down
+    }
+
+    // 5. Return successful response
     return res.json({
       reply,
-      suggestions
+      suggestions,
+      sessionId: activeSessionId
     });
 
   } catch (error) {
+
     console.error('[ChatController] Error processing request:', error);
     
     // Provide clean user-facing errors

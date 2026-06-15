@@ -156,6 +156,17 @@
   margin-top: 2px;
 }
 
+.formErrorNotice {
+  padding: 12px;
+  background: rgba(255, 0, 127, 0.08);
+  border: 1px solid rgba(255, 0, 127, 0.2);
+  color: var(--color-accent-pink);
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: center;
+}
+
 .submitBtn {
   display: flex;
   align-items: center;
