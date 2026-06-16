@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion, useMotionValue, useTransform } from "framer-motion";
 import styles from "./Hero.module.css";
 
-export default function Hero() {
+export default function Hero({ aboutData }) {
   const [isDownloading, setIsDownloading] = useState(false);
   
   // 3D Portrait Rotation mouse tracker
@@ -28,7 +28,9 @@ export default function Hero() {
   };
   
   // Custom Typewriter logic
-  const words = ["MERN Stack Developer", "Full-Stack Engineer", "React & Node Specialist"];
+  const words = aboutData?.title 
+    ? [aboutData.title, "Full-Stack Engineer", "MERN Stack Developer"] 
+    : ["MERN Stack Developer", "Full-Stack Engineer", "React & Node Specialist"];
   const [wordIndex, setWordIndex] = useState(0);
   const [currentText, setCurrentText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
@@ -36,7 +38,7 @@ export default function Hero() {
 
   useEffect(() => {
     const handleType = () => {
-      const currentWord = words[wordIndex];
+      const currentWord = words[wordIndex] || "Developer";
       if (!isDeleting) {
         // Typing
         setCurrentText(currentWord.substring(0, currentText.length + 1));
@@ -62,12 +64,13 @@ export default function Hero() {
 
     const timer = setTimeout(handleType, typingSpeed);
     return () => clearTimeout(timer);
-  }, [currentText, isDeleting, wordIndex, typingSpeed]);
+  }, [currentText, isDeleting, wordIndex, typingSpeed, words]);
 
   const handleDownloadCV = async () => {
     try {
       setIsDownloading(true);
-      const response = await fetch('/resume/DhruvPatel_Resume.pdf');
+      const cvUrl = aboutData?.resumeUrl || '/resume/DhruvPatel_Resume.pdf';
+      const response = await fetch(cvUrl);
       
       if (!response.ok) {
         throw new Error('Resume not found');
@@ -77,7 +80,8 @@ export default function Hero() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = 'DhruvPatel_Resume.pdf';
+      const fileName = cvUrl.split('/').pop() || 'DhruvPatel_Resume.pdf';
+      link.download = fileName;
       
       document.body.appendChild(link);
       link.click();
@@ -107,7 +111,7 @@ export default function Hero() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.2 }}
         >
-          Hello, I'm Dhruv
+          Hello, I'm {aboutData?.name ? aboutData.name.split(' ')[0] : 'Dhruv'}
         </motion.h1>
         
         {/* Dynamic Typewriter text */}
@@ -127,8 +131,7 @@ export default function Hero() {
           animate={{ opacity: 1 }}
           transition={{ duration: 0.5, delay: 0.6 }}
         >
-          I specialize in MongoDB, Express.js, React.js, and Node.js. 
-          I build scalable, modern web applications with clean architectures and micro-animations.
+          {aboutData?.summary || "I specialize in MongoDB, Express.js, React.js, and Node.js. I build scalable, modern web applications with clean architectures and micro-animations."}
         </motion.p>
 
         {/* Social Media Link Icons */}
@@ -139,7 +142,7 @@ export default function Hero() {
           transition={{ duration: 0.5, delay: 0.8 }}
         >
           <motion.a 
-            href="https://github.com/DhruvPatel3125" 
+            href={aboutData?.github || "https://github.com/DhruvPatel3125"} 
             target="_blank" 
             rel="noopener noreferrer" 
             className={styles.socialLink} 
@@ -150,7 +153,7 @@ export default function Hero() {
             <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path></svg>
           </motion.a>
           <motion.a 
-            href="https://www.linkedin.com/in/dhruvpatel312/" 
+            href={aboutData?.linkedin || "https://www.linkedin.com/in/dhruvpatel312/"} 
             target="_blank" 
             rel="noopener noreferrer" 
             className={styles.socialLink} 
@@ -161,7 +164,7 @@ export default function Hero() {
             <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"><path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path><rect x="2" y="9" width="4" height="12"></rect><circle cx="4" cy="4" r="2"></circle></svg>
           </motion.a>
           <motion.a 
-            href="mailto:dhruvjpatel5@gmail.com" 
+            href={aboutData?.email ? `mailto:${aboutData.email}` : "mailto:dhruvjpatel5@gmail.com"} 
             className={styles.socialLink} 
             aria-label="Email"
             whileHover={{ y: -5, scale: 1.1, borderColor: "var(--color-accent-cyan)" }}

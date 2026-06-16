@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import style from "./Navbar.module.css";
 
-export default function Navbar() {
+export default function Navbar({ aboutData }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -27,7 +27,9 @@ export default function Navbar() {
     >
       <a className={style.title} href="#hero">
         <span className={style.titleSystem}>SYS://</span>
-        <span className={style.titleName}>DHRUV_PATEL</span>
+        <span className={style.titleName}>
+          {aboutData?.name ? aboutData.name.toUpperCase().replace(/\s+/g, '_') : 'DHRUV_PATEL'}
+        </span>
         <span className={style.titleCursor}>_</span>
       </a>
       <div className={style.menu}>

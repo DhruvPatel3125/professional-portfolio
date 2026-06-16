@@ -95,7 +95,7 @@ function getDeviceMeta() {
   return { device, browser, os };
 }
 
-export default function ChatBot() {
+export default function ChatBot({ aboutData }) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
     {
@@ -144,8 +144,9 @@ export default function ChatBot() {
   // Download resume trigger
   const handleDownloadResume = () => {
     const link = document.createElement('a');
-    link.href = '/resume/DhruvPatel_Resume.pdf';
-    link.download = 'DhruvPatel_Resume.pdf';
+    const cvUrl = aboutData?.resumeUrl || '/resume/DhruvPatel_Resume.pdf';
+    link.href = cvUrl;
+    link.download = cvUrl.split('/').pop() || 'DhruvPatel_Resume.pdf';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

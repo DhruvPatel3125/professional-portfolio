@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from "./Experience.module.css";
-import history from "../../data/history.json";
-import skills from "../../data/skills.json";
+import initialHistory from "../../data/history.json";
+import initialSkills from "../../data/skills.json";
 
 function SkillCard({ skill }) {
   const [imageError, setImageError] = useState(false);
@@ -99,7 +99,7 @@ function SkillCard({ skill }) {
 }
 
 function HistoryCard({ item }) {
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(!item.imageSrc);
   const logoName = item.organisation.toLowerCase().split(' ')[0]; // E.g. planics, webito, sutex
   
   return (
@@ -118,7 +118,7 @@ function HistoryCard({ item }) {
       <div className={styles.companyLogoContainer}>
         {!imageError ? (
           <img
-            src={`/${item.imageSrc}`}
+            src={item.imageSrc.startsWith('http') ? item.imageSrc : `/${item.imageSrc}`}
             alt={`${item.organisation} Logo`}
             className={styles.companyLogo}
             onError={() => setImageError(true)}
@@ -151,6 +151,37 @@ function HistoryCard({ item }) {
 }
 
 export default function Experience() {
+  const [history, setHistory] = useState(initialHistory);
+  const [skills, setSkills] = useState(initialSkills);
+
+  useEffect(() => {
+    const fetchExperienceData = async () => {
+      try {
+        let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+
+        const skillsRes = await fetch(`${apiBaseUrl}/api/portfolio/skills`);
+        if (skillsRes.ok) {
+          const skillsData = await skillsRes.json();
+          if (Array.isArray(skillsData)) {
+            setSkills(skillsData);
+          }
+        }
+
+        const historyRes = await fetch(`${apiBaseUrl}/api/portfolio/history`);
+        if (historyRes.ok) {
+          const historyData = await historyRes.json();
+          if (Array.isArray(historyData)) {
+            setHistory(historyData);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load dynamic experience/skills data:', err);
+      }
+    };
+    fetchExperienceData();
+  }, []);
+
   const [activeTab, setActiveTab] = useState('all');
 
   const tabs = [

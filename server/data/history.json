@@ -11,7 +11,8 @@
       "Implemented secure, performant, and reliable systems through rate limiting, caching, cron jobs, and comprehensive error handling.",
       "Developed automation workflows using webhooks, routers, iterators, aggregators, and workflow orchestration tools."
     ],
-    "type": "experience"
+    "type": "experience",
+    "imageSrc": "https://res.cloudinary.com/dgn0wbl4b/image/upload/v1781627397/portfolio/bqdinyu5jyux1uku1tge.jpg"
   },
   {
     "role": "Node.js Developer",
@@ -23,7 +24,8 @@
       "Recognized as the only developer on the team to receive special recognition for performance and delivery.",
       "Designed clean APIs, integrated webhooks, and optimized database queries with MongoDB aggregation pipelines."
     ],
-    "type": "experience"
+    "type": "experience",
+    "imageSrc": "https://res.cloudinary.com/dgn0wbl4b/image/upload/v1781627410/portfolio/mhlzmc3m0psysvmszpje.png"
   },
   {
     "role": "Bachelors in Computer Application (BCA)",
@@ -35,6 +37,7 @@
       "Academic Performance: Cumulative GPA of 8.69 / 10.0.",
       "Built several side projects exploring algorithms, data structures, and responsive user interfaces."
     ],
-    "type": "education"
+    "type": "education",
+    "imageSrc": "https://res.cloudinary.com/dgn0wbl4b/image/upload/v1781627421/portfolio/kiynhipwvrc9bx3zulpn.jpg"
   }
 ]

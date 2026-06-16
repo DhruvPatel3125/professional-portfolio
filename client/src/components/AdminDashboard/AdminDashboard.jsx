@@ -6,8 +6,9 @@ export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
   const [loginError, setLoginError] = useState('');
-  const [activeTab, setActiveTab] = useState('overview'); // overview | chats | inquiries | system
+  const [activeTab, setActiveTab] = useState('overview'); // overview | chats | inquiries | system | portfolio
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [editorSubTab, setEditorSubTab] = useState('about'); // about | projects | skills | history
 
   // Data states
   const [stats, setStats] = useState(null);
@@ -17,6 +18,15 @@ export default function AdminDashboard() {
   const [inquiries, setInquiries] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
+
+  // Portfolio dynamic editor states
+  const [portfolioAbout, setPortfolioAbout] = useState({
+    name: '', title: '', summary: '', email: '', github: '', linkedin: '', portfolio: '', resumeUrl: ''
+  });
+  const [portfolioProjects, setPortfolioProjects] = useState([]);
+  const [portfolioSkills, setPortfolioSkills] = useState([]);
+  const [portfolioHistory, setPortfolioHistory] = useState([]);
+  const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
   // Search and Filter states
   const [searchInquiry, setSearchInquiry] = useState('');
@@ -107,10 +117,130 @@ export default function AdminDashboard() {
         const inquiriesData = await inquiriesRes.json();
         setInquiries(inquiriesData.inquiries);
       }
+
+      // Fetch dynamic portfolio components
+      const portfolioAboutRes = await fetch(`${apiBaseUrl}/api/portfolio/about`, {
+        headers: { 'Authorization': token }
+      });
+      if (portfolioAboutRes.ok) {
+        const aboutData = await portfolioAboutRes.json();
+        setPortfolioAbout(aboutData.about || {
+          name: '', title: '', summary: '', email: '', github: '', linkedin: '', portfolio: '', resumeUrl: ''
+        });
+      }
+
+      const portfolioProjectsRes = await fetch(`${apiBaseUrl}/api/portfolio/projects`, {
+        headers: { 'Authorization': token }
+      });
+      if (portfolioProjectsRes.ok) {
+        const projectsData = await portfolioProjectsRes.json();
+        setPortfolioProjects(projectsData || []);
+      }
+
+      const portfolioSkillsRes = await fetch(`${apiBaseUrl}/api/portfolio/skills`, {
+        headers: { 'Authorization': token }
+      });
+      if (portfolioSkillsRes.ok) {
+        const skillsData = await portfolioSkillsRes.json();
+        setPortfolioSkills(skillsData || []);
+      }
+
+      const portfolioHistoryRes = await fetch(`${apiBaseUrl}/api/portfolio/history`, {
+        headers: { 'Authorization': token }
+      });
+      if (portfolioHistoryRes.ok) {
+        const historyData = await portfolioHistoryRes.json();
+        setPortfolioHistory(historyData || []);
+      }
     } catch (error) {
       console.error('Failed to load admin data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const showNotify = (message, type = 'success') => {
+    setNotification({ show: true, message, type });
+    setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 4000);
+  };
+
+  const handleSavePortfolioSection = async (sectionType, payload) => {
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/portfolio/${sectionType}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': passcode
+        },
+        body: JSON.stringify(payload)
+      });
+      
+      if (response.ok) {
+        showNotify(`Section '${sectionType}' saved successfully and AI cache reloaded!`);
+        loadDashboardData(passcode);
+      } else {
+        const errorData = await response.json();
+        showNotify(errorData.error || `Failed to save '${sectionType}' changes.`, 'error');
+      }
+    } catch (error) {
+      console.error('Save error:', error);
+      showNotify(`Network error: unable to save changes.`, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleImageUpload = async (e, sectionType, idx) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showNotify('File size exceeds the 5MB limit.', 'error');
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': passcode
+        },
+        body: formData
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && data.url) {
+          showNotify('Image uploaded to Cloudinary successfully!');
+          
+          if (sectionType === 'projects') {
+            const copy = [...portfolioProjects];
+            copy[idx].imageSrc = data.url;
+            setPortfolioProjects(copy);
+          } else if (sectionType === 'history') {
+            const copy = [...portfolioHistory];
+            copy[idx].imageSrc = data.url;
+            setPortfolioHistory(copy);
+          }
+        } else {
+          showNotify('Image upload failed: Invalid response.', 'error');
+        }
+      } else {
+        const errorData = await response.json();
+        const detailMsg = errorData.details ? ` (${typeof errorData.details === 'object' ? JSON.stringify(errorData.details) : errorData.details})` : '';
+        showNotify(`${errorData.error || 'Failed to upload image.'}${detailMsg}`, 'error');
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      showNotify('Network error: unable to upload image.', 'error');
+    } finally {
+      setIsLoading(false);
+      e.target.value = '';
     }
   };
 
@@ -257,6 +387,18 @@ export default function AdminDashboard() {
 
   return (
     <div className={styles.dashboardLayout}>
+      <AnimatePresence>
+        {notification.show && (
+          <motion.div
+            initial={{ opacity: 0, y: -50, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: -50, x: '-50%' }}
+            className={`${styles.notificationToast} ${notification.type === 'error' ? styles.toastError : styles.toastSuccess}`}
+          >
+            {notification.message}
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Mobile Sidebar Backdrop Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
@@ -323,6 +465,17 @@ export default function AdminDashboard() {
               </svg>
             </span> Inbox Requests
             {inquiries.length > 0 && <span className={styles.badgePink}>{inquiries.length}</span>}
+          </button>
+          <button
+            className={`${styles.navItem} ${activeTab === 'portfolio' ? styles.navItemActive : ''}`}
+            onClick={() => handleTabClick('portfolio')}
+          >
+            <span className={styles.navIcon}>
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+            </span> Portfolio Editor
           </button>
           <button
             className={`${styles.navItem} ${activeTab === 'system' ? styles.navItemActive : ''}`}
@@ -887,6 +1040,522 @@ export default function AdminDashboard() {
                         <div className={styles.logLine}>[SYSTEM] Port 3001 is listening for API calls...</div>
                         <div className={styles.logLine}>[API] Logged {sessions.length} chats and {inquiries.length} dynamic inquiry messages successfully.</div>
                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* TAB 5: PORTFOLIO EDITOR */}
+            <AnimatePresence mode="wait">
+              {activeTab === 'portfolio' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  key="portfolio-tab"
+                  className={styles.tabContent}
+                >
+                  <div className={styles.portfolioEditorLayout}>
+                    {/* Section Selector Subtabs */}
+                    <div className={styles.editorNav}>
+                      <button
+                        className={`${styles.editorNavBtn} ${editorSubTab === 'about' ? styles.editorNavBtnActive : ''}`}
+                        onClick={() => setEditorSubTab('about')}
+                      >
+                        [01] PROFILE_INFO
+                      </button>
+                      <button
+                        className={`${styles.editorNavBtn} ${editorSubTab === 'projects' ? styles.editorNavBtnActive : ''}`}
+                        onClick={() => setEditorSubTab('projects')}
+                      >
+                        [02] PROJECTS
+                      </button>
+                      <button
+                        className={`${styles.editorNavBtn} ${editorSubTab === 'skills' ? styles.editorNavBtnActive : ''}`}
+                        onClick={() => setEditorSubTab('skills')}
+                      >
+                        [03] SKILLS
+                      </button>
+                      <button
+                        className={`${styles.editorNavBtn} ${editorSubTab === 'history' ? styles.editorNavBtnActive : ''}`}
+                        onClick={() => setEditorSubTab('history')}
+                      >
+                        [04] EXPERIENCE_TIMELINE
+                      </button>
+                    </div>
+
+                    <div className={styles.editorContentPanel}>
+                      {/* SUB TAB: ABOUT PROFILE */}
+                      {editorSubTab === 'about' && (
+                        <div className={styles.editorFormSection}>
+                          <h3>General About Profile Diagnostics</h3>
+                          <div className={styles.formGrid}>
+                            <div className={styles.formGroup}>
+                              <label>Full Name</label>
+                              <input
+                                type="text"
+                                value={portfolioAbout.name || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, name: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>Professional Title</label>
+                              <input
+                                type="text"
+                                value={portfolioAbout.title || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, title: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroupFull}>
+                              <label>Profile Biography & AI Assistant Context Summary</label>
+                              <textarea
+                                rows={4}
+                                value={portfolioAbout.summary || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, summary: e.target.value })}
+                                className={styles.cyberTextarea}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>Contact Email Address</label>
+                              <input
+                                type="email"
+                                value={portfolioAbout.email || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, email: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>Resume PDF Download Path</label>
+                              <input
+                                type="text"
+                                value={portfolioAbout.resumeUrl || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, resumeUrl: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>GitHub Profile Link</label>
+                              <input
+                                type="url"
+                                value={portfolioAbout.github || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, github: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>LinkedIn Profile Link</label>
+                              <input
+                                type="url"
+                                value={portfolioAbout.linkedin || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, linkedin: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                            <div className={styles.formGroup}>
+                              <label>Portfolio Website URL</label>
+                              <input
+                                type="url"
+                                value={portfolioAbout.portfolio || ''}
+                                onChange={(e) => setPortfolioAbout({ ...portfolioAbout, portfolio: e.target.value })}
+                                className={styles.cyberInput}
+                              />
+                            </div>
+                          </div>
+                          <button
+                            className={styles.cyberSaveBtn}
+                            onClick={() => handleSavePortfolioSection('about', { about: portfolioAbout })}
+                          >
+                            Commit About Diagnostics
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SUB TAB: PROJECTS */}
+                      {editorSubTab === 'projects' && (
+                        <div className={styles.editorListSection}>
+                          <div className={styles.sectionHeaderRow}>
+                            <h3>Projects Diagnostics Grid</h3>
+                            <button
+                              className={styles.cyberAddBtn}
+                              onClick={() => setPortfolioProjects([
+                                ...portfolioProjects,
+                                { title: 'New Project', description: '', skills: [], demo: '', source: '', highlights: [] }
+                              ])}
+                            >
+                              + Add New Project
+                            </button>
+                          </div>
+                          <div className={styles.editorItemsList}>
+                            {portfolioProjects.map((proj, idx) => (
+                              <div key={idx} className={styles.editorItemCard}>
+                                <div className={styles.itemHeader}>
+                                  <h4>Project #{idx + 1}: {proj.title || 'Untitled'}</h4>
+                                  <button
+                                    className={styles.deleteCardBtn}
+                                    onClick={() => setPortfolioProjects(portfolioProjects.filter((_, i) => i !== idx))}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <div className={styles.formGrid}>
+                                  <div className={styles.formGroup}>
+                                    <label>Project Title</label>
+                                    <input
+                                      type="text"
+                                      value={proj.title || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].title = e.target.value;
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Project Image (URL or path)</label>
+                                    <div className={styles.uploadInputWrapper}>
+                                      <input
+                                        type="text"
+                                        value={proj.imageSrc || ''}
+                                        onChange={(e) => {
+                                          const copy = [...portfolioProjects];
+                                          copy[idx].imageSrc = e.target.value;
+                                          setPortfolioProjects(copy);
+                                        }}
+                                        className={styles.cyberInput}
+                                        placeholder="Cloudinary URL or projects/screenshot.png"
+                                      />
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        id={`project-image-file-${idx}`}
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => handleImageUpload(e, 'projects', idx)}
+                                      />
+                                      <label htmlFor={`project-image-file-${idx}`} className={styles.cyberUploadBtn}>
+                                        Upload
+                                      </label>
+                                    </div>
+                                    {proj.imageSrc && (
+                                      <div className={styles.imagePreviewWrapper}>
+                                        <img
+                                          src={proj.imageSrc.startsWith('http') ? proj.imageSrc : `/${proj.imageSrc}`}
+                                          alt={proj.title}
+                                          className={styles.imagePreview}
+                                          onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=100&auto=format&fit=crop&q=80";
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Skills / Tech Stack (comma-separated)</label>
+                                    <input
+                                      type="text"
+                                      value={proj.skills?.join(', ') || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].skills = e.target.value.split(',').map(s => s.trim()).filter(Boolean);
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                      placeholder="React, Node.js, Express"
+                                    />
+                                  </div>
+                                  <div className={styles.formGroupFull}>
+                                    <label>Description</label>
+                                    <textarea
+                                      rows={2}
+                                      value={proj.description || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].description = e.target.value;
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberTextarea}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Demo Link</label>
+                                    <input
+                                      type="text"
+                                      value={proj.demo || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].demo = e.target.value;
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Source Link</label>
+                                    <input
+                                      type="text"
+                                      value={proj.source || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].source = e.target.value;
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroupFull}>
+                                    <label>Highlights / Accomplishments (one line per bullet)</label>
+                                    <textarea
+                                      rows={3}
+                                      value={proj.highlights?.join('\n') || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioProjects];
+                                        copy[idx].highlights = e.target.value.split('\n').filter(Boolean);
+                                        setPortfolioProjects(copy);
+                                      }}
+                                      className={styles.cyberTextarea}
+                                      placeholder="Created RESTful API endpoint&#10;Integrated Socket.io channels"
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            className={styles.cyberSaveBtn}
+                            onClick={() => handleSavePortfolioSection('projects', portfolioProjects)}
+                          >
+                            Commit Projects Grid changes
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SUB TAB: SKILLS */}
+                      {editorSubTab === 'skills' && (
+                        <div className={styles.editorListSection}>
+                          <div className={styles.sectionHeaderRow}>
+                            <h3>Technical Skills Database</h3>
+                            <button
+                              className={styles.cyberAddBtn}
+                              onClick={() => setPortfolioSkills([
+                                ...portfolioSkills,
+                                { title: '', category: 'frontend' }
+                              ])}
+                            >
+                              + Add New Skill
+                            </button>
+                          </div>
+                          <div className={styles.skillsGridInputs}>
+                            {portfolioSkills.map((sk, idx) => (
+                              <div key={idx} className={styles.skillInputItem}>
+                                <input
+                                  type="text"
+                                  value={sk.title || ''}
+                                  onChange={(e) => {
+                                    const copy = [...portfolioSkills];
+                                    copy[idx].title = e.target.value;
+                                    setPortfolioSkills(copy);
+                                  }}
+                                  className={styles.cyberInput}
+                                  placeholder="Skill Name"
+                                />
+                                <select
+                                  value={sk.category || 'frontend'}
+                                  onChange={(e) => {
+                                    const copy = [...portfolioSkills];
+                                    copy[idx].category = e.target.value;
+                                    setPortfolioSkills(copy);
+                                  }}
+                                  className={styles.cyberSelect}
+                                >
+                                  <option value="languages">Languages</option>
+                                  <option value="frontend">Frontend & UI</option>
+                                  <option value="backend">Backend & DB</option>
+                                  <option value="tools">Tools & Platforms</option>
+                                </select>
+                                <button
+                                  className={styles.deleteMiniBtn}
+                                  onClick={() => setPortfolioSkills(portfolioSkills.filter((_, i) => i !== idx))}
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            className={styles.cyberSaveBtn}
+                            onClick={() => handleSavePortfolioSection('skills', portfolioSkills)}
+                            style={{ marginTop: '20px' }}
+                          >
+                            Commit Skills changes
+                          </button>
+                        </div>
+                      )}
+
+                      {/* SUB TAB: EXPERIENCE TIMELINE */}
+                      {editorSubTab === 'history' && (
+                        <div className={styles.editorListSection}>
+                          <div className={styles.sectionHeaderRow}>
+                            <h3>Experience & Education Timeline</h3>
+                            <button
+                              className={styles.cyberAddBtn}
+                              onClick={() => setPortfolioHistory([
+                                ...portfolioHistory,
+                                { role: '', organisation: '', type: 'experience', startDate: '', endDate: '', imageSrc: 'history/work.png', experiences: [] }
+                              ])}
+                            >
+                              + Add Timeline Node
+                            </button>
+                          </div>
+                          <div className={styles.editorItemsList}>
+                            {portfolioHistory.map((item, idx) => (
+                              <div key={idx} className={styles.editorItemCard}>
+                                <div className={styles.itemHeader}>
+                                  <h4>Node #{idx + 1}: {item.role || 'Untitled'} at {item.organisation || 'Untitled'}</h4>
+                                  <button
+                                    className={styles.deleteCardBtn}
+                                    onClick={() => setPortfolioHistory(portfolioHistory.filter((_, i) => i !== idx))}
+                                  >
+                                    Remove
+                                  </button>
+                                </div>
+                                <div className={styles.formGrid}>
+                                  <div className={styles.formGroup}>
+                                    <label>Role / Position / Degree</label>
+                                    <input
+                                      type="text"
+                                      value={item.role || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].role = e.target.value;
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Organisation / Institution</label>
+                                    <input
+                                      type="text"
+                                      value={item.organisation || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].organisation = e.target.value;
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Category Type</label>
+                                    <select
+                                      value={item.type || 'experience'}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].type = e.target.value;
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberSelect}
+                                    >
+                                      <option value="experience">Professional Experience</option>
+                                      <option value="education">Education</option>
+                                    </select>
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Image Logo asset path</label>
+                                    <div className={styles.uploadInputWrapper}>
+                                      <input
+                                        type="text"
+                                        value={item.imageSrc || ''}
+                                        onChange={(e) => {
+                                          const copy = [...portfolioHistory];
+                                          copy[idx].imageSrc = e.target.value;
+                                          setPortfolioHistory(copy);
+                                        }}
+                                        className={styles.cyberInput}
+                                        placeholder="Cloudinary URL or history/webito.png"
+                                      />
+                                      <input
+                                        type="file"
+                                        accept="image/*"
+                                        id={`history-image-file-${idx}`}
+                                        style={{ display: 'none' }}
+                                        onChange={(e) => handleImageUpload(e, 'history', idx)}
+                                      />
+                                      <label htmlFor={`history-image-file-${idx}`} className={styles.cyberUploadBtn}>
+                                        Upload
+                                      </label>
+                                    </div>
+                                    {item.imageSrc && (
+                                      <div className={styles.imagePreviewWrapper}>
+                                        <img
+                                          src={item.imageSrc.startsWith('http') ? item.imageSrc : `/${item.imageSrc}`}
+                                          alt={item.organisation}
+                                          className={styles.imagePreview}
+                                          onError={(e) => {
+                                            e.target.onerror = null;
+                                            e.target.src = "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=100&auto=format&fit=crop&q=80";
+                                          }}
+                                        />
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>Start Date</label>
+                                    <input
+                                      type="text"
+                                      value={item.startDate || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].startDate = e.target.value;
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                      placeholder="July 2023"
+                                    />
+                                  </div>
+                                  <div className={styles.formGroup}>
+                                    <label>End Date (or 'Present')</label>
+                                    <input
+                                      type="text"
+                                      value={item.endDate || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].endDate = e.target.value;
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberInput}
+                                      placeholder="Present"
+                                    />
+                                  </div>
+                                  <div className={styles.formGroupFull}>
+                                    <label>Highlights / Accomplishments / bullet items (one line per bullet)</label>
+                                    <textarea
+                                      rows={3}
+                                      value={item.experiences?.join('\n') || ''}
+                                      onChange={(e) => {
+                                        const copy = [...portfolioHistory];
+                                        copy[idx].experiences = e.target.value.split('\n').filter(Boolean);
+                                        setPortfolioHistory(copy);
+                                      }}
+                                      className={styles.cyberTextarea}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <button
+                            className={styles.cyberSaveBtn}
+                            onClick={() => handleSavePortfolioSection('history', portfolioHistory)}
+                          >
+                            Commit Timeline Nodes changes
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </motion.div>

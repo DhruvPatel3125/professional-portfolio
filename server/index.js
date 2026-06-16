@@ -5,6 +5,8 @@ import cors from 'cors';
 import chatRouter from './routes/chat.js';
 import inquiryRouter from './routes/inquiry.js';
 import adminRouter from './routes/admin.js';
+import portfolioRouter from './routes/portfolio.js';
+import uploadRouter from './routes/upload.js';
 import { connectDB } from './config/db.js';
 
 const app = express();
@@ -37,6 +39,8 @@ app.get('/api/health', (req, res) => {
 app.use('/api/chat', chatRouter);
 app.use('/api/inquiries', inquiryRouter);
 app.use('/api/admin', adminRouter);
+app.use('/api/portfolio', portfolioRouter);
+app.use('/api/upload', uploadRouter);
 
 // Global Error Handler
 app.use((err, req, res, next) => {

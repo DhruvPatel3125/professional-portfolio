@@ -1,10 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from "./Project.module.css";
-import projects from "../../data/project.json";
+import initialProjects from "../../data/project.json";
 import ProjectCard from "./ProjectCard";
 
 export default function Project() {
+  const [projects, setProjects] = useState(initialProjects);
+
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+        const res = await fetch(`${apiBaseUrl}/api/portfolio/projects`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) {
+            setProjects(data);
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load portfolio dynamic projects:', err);
+      }
+    };
+    fetchProjects();
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
 

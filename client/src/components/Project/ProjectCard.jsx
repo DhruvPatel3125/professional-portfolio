@@ -5,7 +5,7 @@ import styles from "./ProjectCard.module.css";
 export default function ProjectCard({
   project: { title, imageSrc, description, skills, demo, source, highlights }
 }) {
-  const [imageError, setImageError] = useState(false);
+  const [imageError, setImageError] = useState(!imageSrc);
 
   const getFallbackImage = (projTitle) => {
     const titleLower = projTitle.toLowerCase();
@@ -36,7 +36,7 @@ export default function ProjectCard({
     >
       <div className={styles.imageWrapper}>
         <motion.img
-          src={imageError ? getFallbackImage(title) : `/${imageSrc}`}
+          src={imageError ? getFallbackImage(title) : (imageSrc.startsWith('http') ? imageSrc : `/${imageSrc}`)}
           alt={`${title} project screenshot`}
           className={styles.image}
           onError={() => setImageError(true)}

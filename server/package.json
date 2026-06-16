@@ -7,10 +7,12 @@
     "dev": "node --watch index.js"
   },
   "dependencies": {
+    "cloudinary": "^2.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",
     "groq-sdk": "^0.13.0",
-    "mongoose": "^9.7.0"
+    "mongoose": "^9.7.0",
+    "multer": "^2.2.0"
   }
 }

@@ -20,6 +20,26 @@ function App() {
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#admin');
   const [scanlinesActive, setScanlinesActive] = useState(true); // Default to ON for cyber immersion
   const [theme, setTheme] = useState("cyan");
+  const [aboutData, setAboutData] = useState(null);
+
+  useEffect(() => {
+    const fetchAboutData = async () => {
+      try {
+        let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+        const res = await fetch(`${apiBaseUrl}/api/portfolio/about`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.about) {
+            setAboutData(data.about);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to load portfolio dynamic profile details:', error);
+      }
+    };
+    fetchAboutData();
+  }, []);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -122,15 +142,15 @@ function App() {
         <div className={`${style.glowBlob} ${style.blobThree}`} />
       </div>
 
-      <Navbar />
-      <Hero />
-      <About />
+      <Navbar aboutData={aboutData} />
+      <Hero aboutData={aboutData} />
+      <About aboutData={aboutData} />
       <Experience />
       <ErrorBoundary>
         <Project />
       </ErrorBoundary>
-      <Contact />
-      <ChatBot />
+      <Contact aboutData={aboutData} />
+      <ChatBot aboutData={aboutData} />
     </div>
   );
 }

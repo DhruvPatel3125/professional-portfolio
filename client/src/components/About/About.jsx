@@ -3,7 +3,7 @@ import { motion, useMotionValue, useTransform } from "framer-motion";
 import style from "./About.module.css";
 import aboutImage from "/about/aboutImage.png";
 
-export default function About() {
+export default function About({ aboutData }) {
   const [activeTab, setActiveTab] = useState("profile");
 
   // 3D Portrait Rotation mouse tracker for About portrait
@@ -83,7 +83,7 @@ export default function About() {
               />
             </div>
             <div className={style.telemetryOverlay} style={{ transform: "translateZ(40px)" }}>
-              <span>DHRUV_PATEL_ID: DP-3125</span>
+              <span>{aboutData?.name ? `${aboutData.name.toUpperCase().replace(/\s+/g, '_')}_ID` : 'DHRUV_PATEL_ID'}: DP-3125</span>
               <span>BIO_SYNC: 100%</span>
             </div>
           </motion.div>
@@ -151,9 +151,9 @@ export default function About() {
                 <div className={style.tabContent}>
                   <div className={style.consoleInput}>$ cat profile_summary.log</div>
                   <p className={style.consoleText}>
-                    I am a Full-Stack Engineer specialized in designing scalable, low-latency, 
+                    {aboutData?.summary || `I am a Full-Stack Engineer specialized in designing scalable, low-latency, 
                     and highly responsive web systems. I bridge clean UI engineering with complex 
-                    backend architecture to build seamless digital assets.
+                    backend architecture to build seamless digital assets.`}
                   </p>
                   
                   <div className={style.logsContainer}>

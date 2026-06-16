@@ -311,12 +311,12 @@
 
 @media screen and (max-width: 830px) {
   .container {
-    flex-direction: column-reverse;
+    flex-direction: column;
     justify-content: center;
     align-items: center;
     gap: 40px;
-    padding-top: 40px;
-    margin-top: 20px;
+    padding-top: 20px;
+    margin-top: 90px;
     margin-left: 5%;
     margin-right: 5%;
     min-height: auto;
