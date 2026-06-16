@@ -27,16 +27,60 @@
 }
 
 .title {
-  font-size: 26px;
+  font-family: monospace;
+  font-size: 20px;
   color: var(--color-text);
   text-decoration: none;
-  font-weight: 800;
-  letter-spacing: 0.5px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  transition: all var(--transition-fast);
 }
 
-.title span {
+.titleSystem {
   color: var(--color-accent-cyan);
-  text-shadow: 0 0 8px rgba(0, 242, 254, 0.3);
+  opacity: 0.8;
+  text-shadow: 0 0 8px var(--color-accent-cyan);
+  font-weight: 800;
+}
+
+.titleName {
+  color: var(--color-text);
+  text-transform: uppercase;
+  transition: all var(--transition-fast);
+}
+
+.title:hover .titleName {
+  color: var(--color-accent-pink);
+  text-shadow: 0 0 10px var(--color-accent-pink);
+}
+
+.titleCursor {
+  color: var(--color-accent-cyan);
+  animation: cursorBlink 1s step-end infinite;
+  font-weight: 900;
+}
+
+@keyframes cursorBlink {
+  from, to { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.linkNum {
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--color-accent-cyan);
+  margin-right: 6px;
+  opacity: 0.75;
+  transition: all var(--transition-fast);
+}
+
+.navLink:hover .linkNum {
+  color: var(--color-accent-pink);
+  opacity: 1;
+  text-shadow: 0 0 8px var(--color-accent-pink);
 }
 
 .menuBtn {

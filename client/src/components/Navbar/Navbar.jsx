@@ -26,7 +26,9 @@ export default function Navbar() {
       transition={{ duration: 0.6, ease: "easeOut" }}
     >
       <a className={style.title} href="#hero">
-        <span>D</span>hruv.<span>P</span>atel
+        <span className={style.titleSystem}>SYS://</span>
+        <span className={style.titleName}>DHRUV_PATEL</span>
+        <span className={style.titleCursor}>_</span>
       </a>
       <div className={style.menu}>
         <img
@@ -52,12 +54,29 @@ export default function Navbar() {
           className={`${style.menuItems} ${menuOpen ? style.menuOpen : ''}`}
           onClick={() => setMenuOpen(false)}
         >
-          <li><a href="#about" className={style.navLink}>About</a></li>
-          <li><a href="#experience" className={style.navLink}>Experience</a></li>
-          <li><a href="#projects" className={style.navLink}>Projects</a></li>
-          <li><a href="#contact" className={style.navLink}>Contact</a></li>
+          <li>
+            <a href="#about" className={style.navLink}>
+              <span className={style.linkNum}>[01]</span> About
+            </a>
+          </li>
+          <li>
+            <a href="#experience" className={style.navLink}>
+              <span className={style.linkNum}>[02]</span> Experience
+            </a>
+          </li>
+          <li>
+            <a href="#projects" className={style.navLink}>
+              <span className={style.linkNum}>[03]</span> Projects
+            </a>
+          </li>
+          <li>
+            <a href="#contact" className={style.navLink}>
+              <span className={style.linkNum}>[04]</span> Contact
+            </a>
+          </li>
         </ul>
       </div>
     </motion.nav>
   );
 }
+
