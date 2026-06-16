@@ -10,10 +10,16 @@ import Contact from './components/Contact/Contact';
 import ParticleBackground from './components/ParticleBackground/ParticleBackground';
 import ChatBot from './components/ChatBot/ChatBot';
 import AdminDashboard from './components/AdminDashboard/AdminDashboard';
+import HUD from './components/HUD/HUD';
+import CustomCursor from './components/CustomCursor/CustomCursor';
+import Lenis from 'lenis';
+import 'lenis/dist/lenis.css';
 
 function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#admin');
+  const [scanlinesActive, setScanlinesActive] = useState(true); // Default to ON for cyber immersion
+  const [theme, setTheme] = useState("cyan");
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -25,6 +31,34 @@ function App() {
       window.removeEventListener('hashchange', handleHashChange);
     };
   }, []);
+
+  useEffect(() => {
+    if (isAdminView) return;
+
+    // Initialize Lenis smooth scroll
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // smooth exponential easing
+      orientation: 'vertical',
+      gestureOrientation: 'vertical',
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+      touchMultiplier: 1.5,
+    });
+
+    let animId;
+    function raf(time) {
+      lenis.raf(time);
+      animId = requestAnimationFrame(raf);
+    }
+
+    animId = requestAnimationFrame(raf);
+
+    return () => {
+      lenis.destroy();
+      cancelAnimationFrame(animId);
+    };
+  }, [isAdminView]);
 
   useEffect(() => {
     if (isAdminView) return; // Disable scroll tracker in admin mode
@@ -61,6 +95,17 @@ function App() {
 
   return (
     <div className={style.App}>
+      <CustomCursor />
+      {scanlinesActive && <div className="crt-overlay" />}
+      
+      {/* HUD overlays and controllers */}
+      <HUD 
+        theme={theme} 
+        setTheme={setTheme} 
+        scanlinesActive={scanlinesActive} 
+        setScanlinesActive={setScanlinesActive} 
+      />
+
       {/* Scroll indicator bar */}
       <div
         className={style.scrollProgress}
@@ -68,7 +113,7 @@ function App() {
       />
 
       {/* Animated vector particle canvas */}
-      <ParticleBackground />
+      <ParticleBackground theme={theme} />
 
       {/* Premium ambient backdrop blobs */}
       <div className={style.blobContainer}>

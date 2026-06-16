@@ -1,0 +1,115 @@
+.cursorWrapper {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 1000000;
+}
+
+/* Make sure custom cursor only displays on devices with pointer support */
+@media (pointer: coarse) {
+  .cursorWrapper {
+    display: none;
+  }
+}
+
+.innerDot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  background-color: var(--color-accent-cyan);
+  border-radius: 50%;
+  z-index: 1000002;
+  box-shadow: 0 0 8px var(--color-accent-cyan);
+  pointer-events: none;
+  transition: transform 0.1s ease;
+}
+
+.hoveredDot {
+  transform: translate(-50%, -50%) scale(1.6);
+  background-color: var(--color-accent-pink);
+  box-shadow: 0 0 10px var(--color-accent-pink);
+}
+
+.outerRing {
+  position: absolute;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 242, 254, 0.4);
+  background: transparent;
+  box-shadow: 0 0 10px rgba(0, 242, 254, 0.15);
+  z-index: 1000001;
+  pointer-events: none;
+  transition: width 0.2s ease, height 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hoveredRing {
+  width: 52px;
+  height: 52px;
+  border-color: var(--color-accent-pink);
+  box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+  background: rgba(255, 0, 127, 0.02);
+}
+
+.clickedRing {
+  width: 22px;
+  height: 22px;
+  border-color: var(--color-accent-purple);
+  box-shadow: 0 0 12px var(--color-accent-purple);
+  background: rgba(127, 0, 255, 0.1);
+}
+
+/* Targeting Crosshair Ticks */
+.crosshairTick {
+  position: absolute;
+  background-color: var(--color-accent-pink);
+  pointer-events: none;
+  opacity: 0.8;
+}
+
+.tickTop {
+  top: -6px;
+  left: 50%;
+  width: 1px;
+  height: 6px;
+  transform: translateX(-50%);
+}
+
+.tickBottom {
+  bottom: -6px;
+  left: 50%;
+  width: 1px;
+  height: 6px;
+  transform: translateX(-50%);
+}
+
+.tickLeft {
+  top: 50%;
+  left: -6px;
+  width: 6px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.tickRight {
+  top: 50%;
+  right: -6px;
+  width: 6px;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.telemetryTag {
+  position: absolute;
+  top: -16px;
+  left: 54px;
+  font-family: monospace;
+  font-size: 7px;
+  color: var(--color-accent-pink);
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+  opacity: 0.7;
+}

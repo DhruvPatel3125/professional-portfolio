@@ -1,9 +1,31 @@
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { motion, useMotionValue, useTransform } from "framer-motion";
 import styles from "./Hero.module.css";
 
 export default function Hero() {
   const [isDownloading, setIsDownloading] = useState(false);
+  
+  // 3D Portrait Rotation mouse tracker
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useTransform(y, [-200, 200], [15, -15]);
+  const rotateY = useTransform(x, [-200, 200], [-15, 15]);
+
+  const handleMouseMove = (e) => {
+    const el = e.currentTarget;
+    const rect = el.getBoundingClientRect();
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left - width / 2;
+    const mouseY = e.clientY - rect.top - height / 2;
+    x.set(mouseX);
+    y.set(mouseY);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
   
   // Custom Typewriter logic
   const words = ["MERN Stack Developer", "Full-Stack Engineer", "React & Node Specialist"];
@@ -187,12 +209,20 @@ export default function Hero() {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 1.2, delay: 0.3, type: "spring", stiffness: 80 }}
+        style={{ rotateX, rotateY, transformStyle: "preserve-3d" }}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
       >
-        <div className={styles.imageBorderGlow}>
+        {/* Futuristic Cyber Dials and Overlays */}
+        <div className={styles.circleDialOne} />
+        <div className={styles.circleDialTwo} />
+        
+        <div className={styles.imageBorderGlow} style={{ transform: "translateZ(45px)", transformStyle: "preserve-3d" }}>
           <img
             src="/hero/heroImage.png"
             alt="Dhruv Patel Portrait"
             className={styles.heroImage}
+            style={{ transform: "translateZ(10px)" }}
             onError={(e) => {
               e.target.onerror = null;
               e.target.src = "https://images.unsplash.com/photo-1507238691740-187a5b1d37b8?w=500&auto=format&fit=crop";

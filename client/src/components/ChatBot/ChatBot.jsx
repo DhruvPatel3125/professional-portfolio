@@ -259,7 +259,7 @@ export default function ChatBot() {
 
       {/* Chat Widget Window */}
       {isOpen && (
-        <div className={styles.chatContainer}>
+        <div className={styles.chatContainer} data-lenis-prevent>
           {/* Header */}
           <div className={styles.chatHeader}>
             <div className={styles.headerInfo}>
