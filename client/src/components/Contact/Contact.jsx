@@ -43,12 +43,28 @@ export default function Contact({ aboutData }) {
     try {
       let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
       apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+
+      // Retrieve current chatbot session ID for linking
+      let sessionId = null;
+      try {
+        const stored = sessionStorage.getItem('portfolio_chatbot_session');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          sessionId = parsed.sessionId;
+        }
+      } catch (err) {
+        console.warn('Failed to retrieve chatbot session ID for inquiry:', err);
+      }
+
       const response = await fetch(`${apiBaseUrl}/api/inquiries`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          sessionId
+        })
       });
 
       if (!response.ok) {

@@ -27,6 +27,11 @@ const inquirySchema = new mongoose.Schema({
     type: String,
     default: 'Unknown'
   },
+  sessionId: {
+    type: String,
+    default: null,
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now

@@ -7,7 +7,7 @@ import { getIpLocation } from '../services/geoService.js';
  */
 export async function createInquiry(req, res) {
   try {
-    const { name, email, message } = req.body;
+    const { name, email, message, sessionId } = req.body;
 
     // 1. Validation
     if (!name || !name.trim()) {
@@ -38,7 +38,8 @@ export async function createInquiry(req, res) {
       message: message.trim(),
       ipAddress: rawIp,
       userAgent,
-      location
+      location,
+      sessionId: sessionId || null
     });
 
     await newInquiry.save();

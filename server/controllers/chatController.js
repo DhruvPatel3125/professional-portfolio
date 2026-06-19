@@ -154,3 +154,47 @@ async function logChatBackground(activeSessionId, userMessage, botReply, rawIp, 
     console.error('[ChatController] Background chat storage failed:', dbError.message || dbError);
   }
 }
+
+/**
+ * Controller to track chatbot session engagement (clicks on resume, projects, socials).
+ * POST /api/chat/track
+ */
+export async function trackSessionEngagement(req, res) {
+  try {
+    const { sessionId, action } = req.body;
+
+    if (!sessionId || !action) {
+      return res.status(400).json({ error: 'Session ID and action are required.' });
+    }
+
+    const validActions = ['resume', 'project', 'github', 'linkedin'];
+    if (!validActions.includes(action)) {
+      return res.status(400).json({ error: `Invalid action type. Must be one of: ${validActions.join(', ')}` });
+    }
+
+    const fieldMap = {
+      resume: 'resumeDownloads',
+      project: 'projectClicks',
+      github: 'githubClicks',
+      linkedin: 'linkedinClicks'
+    };
+
+    const updateField = fieldMap[action];
+
+    // Find and update the session atomically by incrementing the click counter
+    await ChatSession.findOneAndUpdate(
+      { sessionId },
+      { 
+        $inc: { [updateField]: 1 },
+        $set: { lastActivityAt: new Date() }
+      },
+      { upsert: false }
+    );
+
+    return res.json({ success: true });
+
+  } catch (error) {
+    console.error('[ChatController] Error tracking session engagement:', error);
+    return res.status(500).json({ error: 'Failed to record engagement metrics.' });
+  }
+}

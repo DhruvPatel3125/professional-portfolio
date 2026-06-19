@@ -137,6 +137,30 @@ function getInitialSessionData() {
   return { sessionId: newSessionId, messages: defaultMessages };
 }
 
+// Expose global tracker for client-side engagement tracking across other pages
+window.trackEngagement = async (action) => {
+  try {
+    const stored = sessionStorage.getItem('portfolio_chatbot_session');
+    if (!stored) return;
+    const { sessionId } = JSON.parse(stored);
+    if (!sessionId) return;
+
+    let apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+    apiBaseUrl = apiBaseUrl.trim().replace(/\/$/, '');
+    
+    // Call background API to record click action
+    await fetch(`${apiBaseUrl}/api/chat/track`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sessionId, action })
+    });
+  } catch (error) {
+    console.warn('[Tracking] Failed to track engagement action:', error);
+  }
+};
+
 export default function ChatBot({ aboutData }) {
   const [isOpen, setIsOpen] = useState(false);
   
@@ -158,6 +182,36 @@ export default function ChatBot({ aboutData }) {
   // Synchronize changes to sessionStorage and cleanup legacy localStorage key
   useEffect(() => {
     localStorage.removeItem('portfolio_chatbot_session_id');
+
+    // Intercept click events globally to track engagement actions
+    const handleGlobalClick = (e) => {
+      const anchor = e.target.closest('a');
+      if (!anchor) return;
+
+      const href = anchor.href || '';
+      const text = (anchor.innerText || anchor.title || '').toLowerCase();
+
+      if (href.includes('github.com')) {
+        window.trackEngagement?.('github');
+      } else if (href.includes('linkedin.com')) {
+        window.trackEngagement?.('linkedin');
+      } else if (href.includes('.pdf') || href.includes('resume') || text.includes('resume') || text.includes('cv')) {
+        window.trackEngagement?.('resume');
+      } else if (
+        anchor.className.includes('link') || 
+        anchor.closest('[class*="Project"]') ||
+        href.includes('demo') ||
+        text.includes('demo') || 
+        text.includes('source')
+      ) {
+        window.trackEngagement?.('project');
+      }
+    };
+
+    document.addEventListener('click', handleGlobalClick);
+    return () => {
+      document.removeEventListener('click', handleGlobalClick);
+    };
   }, []);
 
   useEffect(() => {
@@ -192,6 +246,7 @@ export default function ChatBot({ aboutData }) {
 
   // Download resume trigger
   const handleDownloadResume = () => {
+    window.trackEngagement?.('resume'); // Log engagement click
     const link = document.createElement('a');
     const cvUrl = aboutData?.resumeUrl || '/resume/DhruvPatel_Resume.pdf';
     link.href = cvUrl;

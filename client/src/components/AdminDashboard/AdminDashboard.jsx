@@ -330,6 +330,39 @@ export default function AdminDashboard() {
     }
   };
 
+  const handleViewInquiryChat = async (inqSessionId) => {
+    setActiveTab('chats');
+    const foundSession = sessions.find(s => s.sessionId === inqSessionId);
+    if (foundSession) {
+      selectChatSession(foundSession);
+    } else {
+      const mockSession = {
+        sessionId: inqSessionId,
+        location: 'Resolved from Inbox',
+        ipAddress: 'Checking...',
+        os: 'Unknown',
+        browser: 'Unknown',
+        device: 'Desktop'
+      };
+      setSelectedSession(mockSession);
+      setLoadingMessages(true);
+      try {
+        const response = await fetch(`${apiBaseUrl}/api/admin/sessions/${inqSessionId}`, {
+          headers: { 'Authorization': passcode }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setSelectedSession(data.session || mockSession);
+          setSessionMessages(data.messages);
+        }
+      } catch (err) {
+        console.error('Error viewing inquiry chat session:', err);
+      } finally {
+        setLoadingMessages(false);
+      }
+    }
+  };
+
   const deleteInquiryItem = async (id) => {
     if (!window.confirm('Are you sure you want to permanently delete this inquiry?')) return;
     try {
@@ -944,6 +977,23 @@ export default function AdminDashboard() {
                                   <strong>UA:</strong> {selectedSession.userAgent}
                                 </div>
                               )}
+                              
+                              {/* Click Action Engagement Metrics */}
+                              <div style={{ marginTop: '12px', display: 'flex', flexWrap: 'wrap', gap: '8px', background: 'rgba(255,255,255,0.02)', padding: '10px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.04)' }}>
+                                <span style={{ color: 'var(--color-text-secondary)', fontWeight: '700', fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.5px', alignSelf: 'center', marginRight: '4px' }}>Engagement Actions:</span>
+                                <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(0, 242, 254, 0.1)', color: 'var(--color-accent-cyan)', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }} title="Resume PDF downloads">
+                                  📄 Resume: {selectedSession.resumeDownloads || 0}
+                                </span>
+                                <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(121, 40, 202, 0.15)', color: 'var(--color-accent-purple)', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }} title="Project live demo or source code clicks">
+                                  💻 Projects: {selectedSession.projectClicks || 0}
+                                </span>
+                                <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(255, 255, 255, 0.05)', color: '#fff', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }} title="GitHub links clicks">
+                                  🐙 GitHub: {selectedSession.githubClicks || 0}
+                                </span>
+                                <span style={{ fontSize: '11px', display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(0, 119, 181, 0.15)', color: '#0077b5', padding: '3px 8px', borderRadius: '12px', fontWeight: 'bold' }} title="LinkedIn profile clicks">
+                                  🔗 LinkedIn: {selectedSession.linkedinClicks || 0}
+                                </span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1057,17 +1107,44 @@ export default function AdminDashboard() {
                                   {inq.email}
                                 </a>
                               </div>
-                              <button 
-                                onClick={() => deleteInquiryItem(inq._id)} 
-                                className={styles.deleteCardBtn}
-                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                              >
-                                <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
-                                  <polyline points="3 6 5 6 21 6"></polyline>
-                                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                </svg>
-                                Delete
-                              </button>
+                              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                                {inq.sessionId && (
+                                  <button
+                                    onClick={() => handleViewInquiryChat(inq.sessionId)}
+                                    style={{
+                                      background: 'rgba(0, 242, 254, 0.1)',
+                                      border: '1px solid rgba(0, 242, 254, 0.25)',
+                                      color: 'var(--color-accent-cyan)',
+                                      padding: '6px 12px',
+                                      borderRadius: '6px',
+                                      fontSize: '11px',
+                                      fontWeight: '700',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '4px',
+                                      transition: 'all var(--transition-fast)'
+                                    }}
+                                    title="View this visitor's AI Chatbot dialogue transcript"
+                                  >
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    View Chat History
+                                  </button>
+                                )}
+                                <button 
+                                  onClick={() => deleteInquiryItem(inq._id)} 
+                                  className={styles.deleteCardBtn}
+                                  style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                >
+                                  <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                    <polyline points="3 6 5 6 21 6"></polyline>
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                  </svg>
+                                  Delete
+                                </button>
+                              </div>
                             </div>
 
                             <div className={styles.inquiryTextBody}>

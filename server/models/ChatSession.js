@@ -47,6 +47,22 @@ const chatSessionSchema = new mongoose.Schema({
     type: String,
     default: 'Unknown'
   },
+  resumeDownloads: {
+    type: Number,
+    default: 0
+  },
+  projectClicks: {
+    type: Number,
+    default: 0
+  },
+  githubClicks: {
+    type: Number,
+    default: 0
+  },
+  linkedinClicks: {
+    type: Number,
+    default: 0
+  },
   createdAt: {
     type: Date,
     default: Date.now
