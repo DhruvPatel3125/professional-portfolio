@@ -1,23 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './ChatBot.module.css';
 
-// Simple lightweight custom markdown to HTML parser to support bold, list items, and links
+// Simple lightweight custom markdown to HTML parser to support bold, list items, headings, code, and links
 function parseMarkdown(text) {
   if (!text) return '';
-  
+
   let html = text;
-  
+
   // Clean HTML tags first to avoid injection
   html = html
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
-    
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Headings: ### Title -> <h4>Title</h4>
+  html = html.replace(/^### (.*?)$/gm, '<h4 style="margin: 12px 0 6px 0; color: #fff; font-size: 13px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3 style="margin: 16px 0 8px 0; color: #fff; font-size: 14px; font-weight: 800;">$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2 style="margin: 20px 0 10px 0; color: #fff; font-size: 15px; font-weight: 800;">$1</h2>');
+
   // Bold: **text** -> <strong>text</strong>
   html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-  
+
+  // Inline code: `text` -> <code>text</code>
+  html = html.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 12px; color: #00f2fe;">$1</code>');
+
   // Bullet items: * item -> <li>item</li>
-  // First group lists
   const lines = html.split('\n');
   let inList = false;
   const processedLines = lines.map(line => {
@@ -26,16 +33,16 @@ function parseMarkdown(text) {
       const itemContent = trimmed.substring(2);
       if (!inList) {
         inList = true;
-        return `<ul><li>${itemContent}</li>`;
+        return `<ul style="margin: 6px 0 10px 18px; padding: 0; list-style-type: disc;"><li style="margin-bottom: 4px;">${itemContent}</li>`;
       }
-      return `<li>${itemContent}</li>`;
+      return `<li style="margin-bottom: 4px;">${itemContent}</li>`;
     } else if (trimmed.match(/^\d+\.\s/)) {
       const itemContent = trimmed.replace(/^\d+\.\s/, '');
       if (!inList) {
         inList = true;
-        return `<ol><li>${itemContent}</li>`;
+        return `<ol style="margin: 6px 0 10px 18px; padding: 0;"><li style="margin-bottom: 4px;">${itemContent}</li>`;
       }
-      return `<li>${itemContent}</li>`;
+      return `<li style="margin-bottom: 4px;">${itemContent}</li>`;
     } else {
       if (inList) {
         inList = false;
@@ -44,21 +51,21 @@ function parseMarkdown(text) {
       return line;
     }
   });
-  
+
   if (inList) {
     processedLines.push('</ul>');
   }
-  
+
   html = processedLines.join('\n');
-  
+
   // Links: [text](url) -> <a href="url" target="_blank" rel="noopener noreferrer">text</a>
   html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #00f2fe; text-decoration: underline;">$1</a>');
-  
-  // Paragraphs: double newlines to breaks or wrapped
-  html = html.replace(/\n\n/g, '</p><p>');
+
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p style="margin-bottom: 8px;">');
   html = html.replace(/\n/g, '<br />');
-  
-  return `<p>${html}</p>`;
+
+  return `<p style="margin: 0; padding: 0;">${html}</p>`;
 }
 
 function getDeviceMeta() {
@@ -92,18 +99,52 @@ function getDeviceMeta() {
   else if (userAgent.indexOf('MSIE') !== -1 || !!document.documentMode === true) browser = 'IE';
   else if (userAgent.indexOf('Edge') !== -1) browser = 'Edge';
 
-  return { device, browser, os };
+  return { 
+    device, 
+    browser, 
+    os,
+    screenResolution: `${window.screen.width || 0}x${window.screen.height || 0}`,
+    locale: navigator.language || navigator.userLanguage || 'Unknown',
+    referrer: document.referrer || 'Direct',
+    currentPage: window.location.pathname || '/',
+    userAgent: navigator.userAgent
+  };
 }
 
-export default function ChatBot({ aboutData }) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState([
+// Restores state from sessionStorage or initializes fresh values if expired (after 30 mins)
+function getInitialSessionData() {
+  try {
+    const stored = sessionStorage.getItem('portfolio_chatbot_session');
+    if (stored) {
+      const { sessionId, messages, lastActive } = JSON.parse(stored);
+      // 30 minutes session expiration limit
+      if (Date.now() - lastActive < 1800000) {
+        return { sessionId, messages };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to parse chatbot session:', e);
+  }
+
+  const newSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const defaultMessages = [
     {
       role: 'bot',
       content: "Hello! 👋 I'm Dhruv's AI Portfolio Assistant.\n\nAsk me anything about his skills, experience, projects, or how to download his resume!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }
-  ]);
+  ];
+  return { sessionId: newSessionId, messages: defaultMessages };
+}
+
+export default function ChatBot({ aboutData }) {
+  const [isOpen, setIsOpen] = useState(false);
+  
+  // Use state initializer function to avoid race conditions or empty IDs on mount
+  const [initialSession] = useState(() => getInitialSessionData());
+  const [messages, setMessages] = useState(initialSession.messages);
+  const [sessionId, setSessionId] = useState(initialSession.sessionId);
+
   const [inputText, setInputText] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [suggestions, setSuggestions] = useState([
@@ -111,19 +152,27 @@ export default function ChatBot({ aboutData }) {
     "Tell me about his projects",
     "How can I contact him?"
   ]);
-  const [sessionId, setSessionId] = useState('');
 
   const messagesEndRef = useRef(null);
 
-  // Initialize or fetch existing Session ID
+  // Synchronize changes to sessionStorage and cleanup legacy localStorage key
   useEffect(() => {
-    let storedSessionId = localStorage.getItem('portfolio_chatbot_session_id');
-    if (!storedSessionId) {
-      storedSessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-      localStorage.setItem('portfolio_chatbot_session_id', storedSessionId);
-    }
-    setSessionId(storedSessionId);
+    localStorage.removeItem('portfolio_chatbot_session_id');
   }, []);
+
+  useEffect(() => {
+    if (sessionId) {
+      try {
+        sessionStorage.setItem('portfolio_chatbot_session', JSON.stringify({
+          sessionId,
+          messages,
+          lastActive: Date.now()
+        }));
+      } catch (e) {
+        console.error('Failed to write chatbot session state:', e);
+      }
+    }
+  }, [messages, sessionId]);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {

@@ -27,6 +27,26 @@ const chatSessionSchema = new mongoose.Schema({
     type: String,
     default: 'Unknown'
   },
+  screenResolution: {
+    type: String,
+    default: 'Unknown'
+  },
+  locale: {
+    type: String,
+    default: 'Unknown'
+  },
+  referrer: {
+    type: String,
+    default: 'Unknown'
+  },
+  currentPage: {
+    type: String,
+    default: 'Unknown'
+  },
+  userAgent: {
+    type: String,
+    default: 'Unknown'
+  },
   createdAt: {
     type: Date,
     default: Date.now

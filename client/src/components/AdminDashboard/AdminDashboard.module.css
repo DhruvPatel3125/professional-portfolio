@@ -906,23 +906,45 @@
 }
 
 .dialogueBubble {
-  padding: 12px 16px;
-  border-radius: 12px;
-  font-size: 14px;
-  line-height: 1.5;
+  padding: 14px 18px;
+  border-radius: 14px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  font-family: "Inter", "Roboto", sans-serif;
+  letter-spacing: 0.2px;
+}
+
+.dialogueBubble p {
+  margin: 0 0 12px 0;
+}
+
+.dialogueBubble p:last-child {
+  margin-bottom: 0;
+}
+
+.dialogueBubble code {
+  background: rgba(255, 255, 255, 0.06);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+  color: var(--color-accent-cyan);
 }
 
 .dialogueBubbleUser {
-  background: var(--color-primary);
+  background: linear-gradient(135deg, rgba(87, 108, 188, 0.25) 0%, rgba(25, 55, 109, 0.45) 100%);
+  border: 1px solid rgba(87, 108, 188, 0.4);
   color: #fff;
   border-top-right-radius: 0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .dialogueBubbleBot {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--glass-border);
-  color: var(--color-text);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  color: var(--color-text-secondary);
   border-top-left-radius: 0;
+  box-shadow: var(--glass-shadow);
 }
 
 /* Empty Prompt */

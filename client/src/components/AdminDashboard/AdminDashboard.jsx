@@ -2,6 +2,73 @@ import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import styles from './AdminDashboard.module.css';
 
+// Simple lightweight custom markdown to HTML parser to support bold, list items, headings, code, and links
+function parseMarkdown(text) {
+  if (!text) return '';
+
+  let html = text;
+
+  // Clean HTML tags first to avoid injection
+  html = html
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Headings: ### Title -> <h4>Title</h4>
+  html = html.replace(/^### (.*?)$/gm, '<h4 style="margin: 14px 0 6px 0; color: #fff; font-size: 14px; font-weight: 700; border-bottom: 1px solid rgba(255,255,255,0.06); padding-bottom: 4px;">$1</h4>');
+  html = html.replace(/^## (.*?)$/gm, '<h3 style="margin: 18px 0 8px 0; color: #fff; font-size: 15px; font-weight: 800;">$1</h3>');
+  html = html.replace(/^# (.*?)$/gm, '<h2 style="margin: 22px 0 10px 0; color: #fff; font-size: 16px; font-weight: 800;">$1</h2>');
+
+  // Bold: **text** -> <strong>text</strong>
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Inline code: `text` -> <code>text</code>
+  html = html.replace(/`(.*?)`/g, '<code style="background: rgba(255,255,255,0.06); padding: 2px 6px; border-radius: 4px; font-family: monospace; font-size: 13px; color: #00f2fe;">$1</code>');
+
+  // Bullet items: * item -> <li>item</li>
+  const lines = html.split('\n');
+  let inList = false;
+  const processedLines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('* ') || trimmed.startsWith('- ')) {
+      const itemContent = trimmed.substring(2);
+      if (!inList) {
+        inList = true;
+        return `<ul style="margin: 6px 0 10px 18px; padding: 0; list-style-type: disc;"><li style="margin-bottom: 4px;">${itemContent}</li>`;
+      }
+      return `<li style="margin-bottom: 4px;">${itemContent}</li>`;
+    } else if (trimmed.match(/^\d+\.\s/)) {
+      const itemContent = trimmed.replace(/^\d+\.\s/, '');
+      if (!inList) {
+        inList = true;
+        return `<ol style="margin: 6px 0 10px 18px; padding: 0;"><li style="margin-bottom: 4px;">${itemContent}</li>`;
+      }
+      return `<li style="margin-bottom: 4px;">${itemContent}</li>`;
+    } else {
+      if (inList) {
+        inList = false;
+        return `</ul>${line}`;
+      }
+      return line;
+    }
+  });
+
+  if (inList) {
+    processedLines.push('</ul>');
+  }
+
+  html = processedLines.join('\n');
+
+  // Links: [text](url) -> <a href="url" target="_blank" rel="noopener noreferrer">text</a>
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #00f2fe; text-decoration: underline;">$1</a>');
+
+  // Paragraphs
+  html = html.replace(/\n\n/g, '</p><p style="margin-bottom: 8px;">');
+  html = html.replace(/\n/g, '<br />');
+
+  return `<p style="margin: 0; padding: 0;">${html}</p>`;
+}
+
 export default function AdminDashboard() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passcode, setPasscode] = useState('');
@@ -835,7 +902,48 @@ export default function AdminDashboard() {
                                   </svg>
                                   {selectedSession.os} - {selectedSession.browser}
                                 </span>
+                                {selectedSession.screenResolution && selectedSession.screenResolution !== 'Unknown' && (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                      <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                                      <line x1="8" y1="21" x2="16" y2="21"></line>
+                                      <line x1="12" y1="17" x2="12" y2="21"></line>
+                                    </svg>
+                                    {selectedSession.screenResolution}
+                                  </span>
+                                )}
+                                {selectedSession.locale && selectedSession.locale !== 'Unknown' && (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                                    </svg>
+                                    {selectedSession.locale}
+                                  </span>
+                                )}
+                                {selectedSession.referrer && selectedSession.referrer !== 'Unknown' && (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                                    </svg>
+                                    Ref: {selectedSession.referrer}
+                                  </span>
+                                )}
+                                {selectedSession.currentPage && selectedSession.currentPage !== 'Unknown' && (
+                                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                    <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                                      <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                      <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                    </svg>
+                                    Page: {selectedSession.currentPage}
+                                  </span>
+                                )}
                               </div>
+                              {selectedSession.userAgent && selectedSession.userAgent !== 'Unknown' && (
+                                <div style={{ marginTop: '8px', fontSize: '11px', color: 'var(--color-text-muted)', fontFamily: 'monospace', wordBreak: 'break-all', opacity: 0.85 }}>
+                                  <strong>UA:</strong> {selectedSession.userAgent}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -863,9 +971,10 @@ export default function AdminDashboard() {
                                       <strong>{msg.role === 'user' ? 'Visitor' : 'AI Assistant'}</strong>
                                       <span>{new Date(msg.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
                                     </div>
-                                    <div className={`${styles.dialogueBubble} ${msg.role === 'user' ? styles.dialogueBubbleUser : styles.dialogueBubbleBot}`}>
-                                      {msg.content}
-                                    </div>
+                                    <div 
+                                      className={`${styles.dialogueBubble} ${msg.role === 'user' ? styles.dialogueBubbleUser : styles.dialogueBubbleBot}`}
+                                      dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.content) }}
+                                    />
                                   </div>
                                 </motion.div>
                               ))}

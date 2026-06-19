@@ -40,50 +40,14 @@ export async function handleChat(req, res) {
     // 3. Generate suggestion chips based on the output to support frontend UI
     const suggestions = generateSuggestions(reply);
 
-    // 4. Save to Database (Asynchronously - wrapped in try/catch for graceful degradation)
-    try {
-      const rawIp = req.headers['x-forwarded-for']
-        ? req.headers['x-forwarded-for'].split(',')[0].trim()
-        : (req.socket.remoteAddress || req.ip);
+    // 4. Save to Database asynchronously (non-blocking for high scalability)
+    const rawIp = req.headers['x-forwarded-for']
+      ? req.headers['x-forwarded-for'].split(',')[0].trim()
+      : (req.socket.remoteAddress || req.ip);
 
-      // Save user query
-      const userMsg = new ChatMessage({
-        sessionId: activeSessionId,
-        role: 'user',
-        content: cleanedMessage
-      });
-      await userMsg.save();
-
-      // Save bot reply
-      const botMsg = new ChatMessage({
-        sessionId: activeSessionId,
-        role: 'bot',
-        content: reply
-      });
-      await botMsg.save();
-
-      // Update or create ChatSession entry
-      let sessionDoc = await ChatSession.findOne({ sessionId: activeSessionId });
-      if (!sessionDoc) {
-        // Resolve location and details for new session
-        const location = await getIpLocation(rawIp);
-        sessionDoc = new ChatSession({
-          sessionId: activeSessionId,
-          ipAddress: rawIp,
-          device: deviceMeta?.device || 'Desktop',
-          browser: deviceMeta?.browser || 'Unknown',
-          os: deviceMeta?.os || 'Unknown',
-          location
-        });
-      } else {
-        sessionDoc.lastActivityAt = new Date();
-      }
-      await sessionDoc.save();
-
-    } catch (dbError) {
-      console.error('[ChatController] Mongoose storage failed:', dbError.message || dbError);
-      // Fail silently to the user so chatbot still answers even if DB goes down
-    }
+    logChatBackground(activeSessionId, cleanedMessage, reply, rawIp, deviceMeta).catch(err => {
+      console.error('[ChatController] Error in logChatBackground promise chain:', err);
+    });
 
     // 5. Return successful response
     return res.json({
@@ -137,4 +101,56 @@ function generateSuggestions(reply) {
 
   // Deduplicate and return max 3 suggestions
   return [...new Set(suggestions)].slice(0, 3);
+}
+
+/**
+ * Helper to log chat messages and session updates asynchronously in the background.
+ */
+async function logChatBackground(activeSessionId, userMessage, botReply, rawIp, deviceMeta) {
+  try {
+    const userMsg = new ChatMessage({
+      sessionId: activeSessionId,
+      role: 'user',
+      content: userMessage
+    });
+
+    const botMsg = new ChatMessage({
+      sessionId: activeSessionId,
+      role: 'bot',
+      content: botReply
+    });
+
+    // Geolocation API check with caching inside geoService
+    const location = await getIpLocation(rawIp);
+
+    await Promise.all([
+      userMsg.save(),
+      botMsg.save(),
+      ChatSession.findOneAndUpdate(
+        { sessionId: activeSessionId },
+        {
+          $setOnInsert: {
+            sessionId: activeSessionId,
+            ipAddress: rawIp,
+            device: deviceMeta?.device || 'Desktop',
+            browser: deviceMeta?.browser || 'Unknown',
+            os: deviceMeta?.os || 'Unknown',
+            location: location || 'Unknown Location',
+            screenResolution: deviceMeta?.screenResolution || 'Unknown',
+            locale: deviceMeta?.locale || 'Unknown',
+            referrer: deviceMeta?.referrer || 'Unknown',
+            currentPage: deviceMeta?.currentPage || 'Unknown',
+            userAgent: deviceMeta?.userAgent || 'Unknown',
+            createdAt: new Date()
+          },
+          $set: {
+            lastActivityAt: new Date()
+          }
+        },
+        { upsert: true, new: true }
+      )
+    ]);
+  } catch (dbError) {
+    console.error('[ChatController] Background chat storage failed:', dbError.message || dbError);
+  }
 }

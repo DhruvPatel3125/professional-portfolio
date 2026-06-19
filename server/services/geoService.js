@@ -1,3 +1,6 @@
+// Simple in-memory cache to avoid IP geolocation API rate limits (45 requests per minute)
+const ipCache = new Map();
+
 /**
  * Service to resolve geolocation coordinates or details from a client's IP address.
  */
@@ -22,6 +25,11 @@ export async function getIpLocation(ip) {
     cleanIp = ip.substring(7);
   }
 
+  // Check cache first
+  if (ipCache.has(cleanIp)) {
+    return ipCache.get(cleanIp);
+  }
+
   try {
     // Call free geolocate API with a timeout
     const controller = new AbortController();
@@ -42,7 +50,9 @@ export async function getIpLocation(ip) {
       const city = data.city || '';
       const region = data.regionName || '';
       const country = data.country || '';
-      return [city, region, country].filter(Boolean).join(', ');
+      const resolvedLocation = [city, region, country].filter(Boolean).join(', ');
+      ipCache.set(cleanIp, resolvedLocation);
+      return resolvedLocation;
     }
 
     return 'Unknown Location';
