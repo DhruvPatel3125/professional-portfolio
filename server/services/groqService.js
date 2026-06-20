@@ -4,7 +4,7 @@ import { config } from '../config/env.js';
 let groqClient = null;
 
 // The base system prompt that guides the persona and sets strict constraints on responses
-const getSystemPrompt = (context) => `You are Dhruv Patel's AI Portfolio Assistant, representing Dhruv Patel (Senior Full-Stack Developer & AI Engineer).
+const getSystemPrompt = (context) => `You are Dhruv Patel's AI Portfolio Assistant, representing Dhruv Patel (Junior Full-Stack Developer & AI Engineer).
 Your goal is to answer questions from recruiters, HRs, or collaborators professionally and confidently based ONLY on the portfolio knowledge base provided below.
 
 === PORTFOLIO KNOWLEDGE BASE ===
@@ -97,6 +97,62 @@ export async function generateChatCompletion(userMessage, history = [], context)
 
   } catch (error) {
     console.error('[GroqService] Completion API Error:', error.message || error);
+    throw error;
+  }
+}
+
+/**
+ * Generates dynamic, context-aware follow-up suggestion questions.
+ * @param {string} userMessage - The latest message from the user
+ * @param {string} botReply - The generated chatbot response
+ * @returns {Promise<Array<string>>} List of exactly 3 suggested follow-up questions
+ */
+export async function generateFollowUpSuggestions(userMessage, botReply) {
+  try {
+    const client = getGroqClient();
+
+    const systemPrompt = `You are a helpful assistant for Dhruv Patel's developer portfolio.
+Based on the user's message and the chatbot's response, generate exactly 3 brief, professional, and contextually relevant follow-up questions that a recruiter or visitor might want to ask next.
+Keep suggestions short (typically 4 to 8 words).
+Ensure suggestions directly relate to Dhruv Patel's skills, experience, or projects.
+
+If the chatbot's response indicates it doesn't have information or is out of scope (e.g. "I don't have information about that"), suggest general questions about Dhruv's skills, projects, and contact info.
+
+You MUST respond with a JSON object containing a "suggestions" array with exactly 3 strings.
+Example:
+{
+  "suggestions": [
+    "What projects did he build?",
+    "Tell me about his React skills",
+    "How can I contact him?"
+  ]
+}
+`;
+
+    const chatCompletion = await client.chat.completions.create({
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: `User message: "${userMessage}"\nChatbot reply: "${botReply}"` }
+      ],
+      model: 'llama-3.1-8b-instant',
+      temperature: 0.5,
+      max_tokens: 150,
+      response_format: { type: "json_object" }
+    });
+
+    const content = chatCompletion.choices[0]?.message?.content;
+    if (!content) {
+      throw new Error('Received empty suggestion payload from Groq.');
+    }
+
+    const parsed = JSON.parse(content);
+    if (!parsed || !Array.isArray(parsed.suggestions)) {
+      throw new Error('Invalid JSON format or missing suggestions field.');
+    }
+
+    return parsed.suggestions.filter(s => typeof s === 'string' && s.trim().length > 0).slice(0, 3);
+  } catch (error) {
+    console.error('[GroqService] Suggestions generation error:', error.message || error);
     throw error;
   }
 }

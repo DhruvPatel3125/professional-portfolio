@@ -1,5 +1,5 @@
 import { searchContext } from '../services/vectorSearch.js';
-import { generateChatCompletion } from '../services/groqService.js';
+import { generateChatCompletion, generateFollowUpSuggestions } from '../services/groqService.js';
 import ChatSession from '../models/ChatSession.js';
 import ChatMessage from '../models/ChatMessage.js';
 import { getIpLocation } from '../services/geoService.js';
@@ -37,8 +37,14 @@ export async function handleChat(req, res) {
     const duration = Date.now() - startTime;
     console.log(`[ChatController] Completed chat completion in ${duration}ms.`);
 
-    // 3. Generate suggestion chips based on the output to support frontend UI
-    const suggestions = generateSuggestions(reply);
+    // 3. Generate dynamic suggestion chips using Groq, falling back to static rules on failure
+    let suggestions = [];
+    try {
+      suggestions = await generateFollowUpSuggestions(cleanedMessage, reply);
+    } catch (sugError) {
+      console.warn('[ChatController] Dynamic suggestions generation failed. Falling back to static rules:', sugError.message || sugError);
+      suggestions = generateSuggestions(reply);
+    }
 
     // 4. Save to Database asynchronously (non-blocking for high scalability)
     const rawIp = req.headers['x-forwarded-for']
