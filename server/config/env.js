@@ -33,5 +33,6 @@ export const config = {
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
   FRONTEND_URL: process.env.FRONTEND_URL || 'http://localhost:5173',
   MONGODB_URI: process.env.MONGODB_URI || '',
-  ADMIN_SECRET: process.env.ADMIN_SECRET || 'dhruvAdmin123'
+  ADMIN_SECRET: process.env.ADMIN_SECRET || 'dhruvAdmin123',
+  HUGGINGFACE_API_KEY: process.env.HUGGINGFACE_API_KEY || ''
 };

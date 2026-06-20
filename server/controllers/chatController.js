@@ -1,4 +1,4 @@
-import { getFormattedKnowledge } from '../services/knowledgeLoader.js';
+import { searchContext } from '../services/vectorSearch.js';
 import { generateChatCompletion } from '../services/groqService.js';
 import ChatSession from '../models/ChatSession.js';
 import ChatMessage from '../models/ChatMessage.js';
@@ -30,8 +30,8 @@ export async function handleChat(req, res) {
     console.log(`[ChatController] Processing message for session ${activeSessionId}: "${cleanedMessage.substring(0, 50)}..."`);
     const startTime = Date.now();
 
-    // 2. Fetch context and generate reply from Groq
-    const context = getFormattedKnowledge();
+    // 2. Fetch context and generate reply from Groq via Vector Search
+    const context = await searchContext(cleanedMessage, 5);
     const reply = await generateChatCompletion(cleanedMessage, chatHistory, context);
 
     const duration = Date.now() - startTime;
