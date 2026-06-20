@@ -8,6 +8,11 @@ import {
   getChatSessions,
   getSessionConversation
 } from '../controllers/adminController.js';
+import {
+  getDocuments,
+  addDocument,
+  deleteDocument
+} from '../controllers/ragController.js';
 
 const router = express.Router();
 
@@ -27,5 +32,10 @@ router.delete('/inquiries/:id', deleteInquiry);
 // Chat Logs Explorer
 router.get('/sessions', getChatSessions);
 router.get('/sessions/:sessionId', getSessionConversation);
+
+// Dynamic RAG Documents
+router.get('/documents', getDocuments);
+router.post('/documents', addDocument);
+router.delete('/documents/:title', deleteDocument);
 
 export default router;

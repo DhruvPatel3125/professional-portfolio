@@ -95,6 +95,13 @@ export default function AdminDashboard() {
   const [portfolioHistory, setPortfolioHistory] = useState([]);
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
 
+  // RAG dynamic document states
+  const [documents, setDocuments] = useState([]);
+  const [ragTitle, setRagTitle] = useState('');
+  const [ragContent, setRagContent] = useState('');
+  const [ragCategory, setRagCategory] = useState('General');
+  const [isSavingDoc, setIsSavingDoc] = useState(false);
+
   // Search and Filter states
   const [searchInquiry, setSearchInquiry] = useState('');
   const [searchChat, setSearchChat] = useState('');
@@ -218,6 +225,15 @@ export default function AdminDashboard() {
       if (portfolioHistoryRes.ok) {
         const historyData = await portfolioHistoryRes.json();
         setPortfolioHistory(historyData || []);
+      }
+
+      // Fetch dynamic RAG documents list
+      const docsRes = await fetch(`${apiBaseUrl}/api/admin/documents`, {
+        headers: { 'Authorization': token }
+      });
+      if (docsRes.ok) {
+        const docsData = await docsRes.json();
+        setDocuments(docsData.documents || []);
       }
     } catch (error) {
       console.error('Failed to load admin data:', error);
@@ -378,6 +394,106 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Error deleting inquiry:', err);
     }
+  };
+
+  const handleSaveDocument = async (e) => {
+    e.preventDefault();
+    if (!ragTitle.trim()) {
+      showNotify('Document title is required.', 'error');
+      return;
+    }
+    if (!ragContent.trim()) {
+      showNotify('Document content/body is required.', 'error');
+      return;
+    }
+    
+    setIsSavingDoc(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/admin/documents`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': passcode
+        },
+        body: JSON.stringify({
+          title: ragTitle,
+          content: ragContent,
+          category: ragCategory
+        })
+      });
+      
+      if (response.ok) {
+        showNotify('Document processed, chunked, and embedded successfully!');
+        setRagTitle('');
+        setRagContent('');
+        setRagCategory('General');
+        loadDashboardData(passcode);
+      } else {
+        const err = await response.json();
+        showNotify(err.error || 'Failed to save document.', 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showNotify('Network error saving document.', 'error');
+    } finally {
+      setIsSavingDoc(false);
+    }
+  };
+
+  const handleDeleteDocument = async (title) => {
+    if (title === 'Static Portfolio') {
+      showNotify('Cannot delete core portfolio data.', 'error');
+      return;
+    }
+    if (!window.confirm(`Are you sure you want to permanently delete "${title}"? This will remove all its chunks and vector embeddings.`)) {
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/admin/documents/${encodeURIComponent(title)}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': passcode }
+      });
+      
+      if (response.ok) {
+        showNotify(`Document "${title}" purged successfully.`);
+        loadDashboardData(passcode);
+      } else {
+        const err = await response.json();
+        showNotify(err.error || 'Failed to delete document.', 'error');
+      }
+    } catch (error) {
+      console.error(error);
+      showNotify('Network error deleting document.', 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDocFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    if (!file.name.endsWith('.txt')) {
+      showNotify('Only .txt text files are supported.', 'error');
+      return;
+    }
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setRagContent(event.target.result || '');
+      if (!ragTitle.trim()) {
+        const titleWithoutExt = file.name.replace(/\.[^/.]+$/, "");
+        setRagTitle(titleWithoutExt);
+      }
+      showNotify('File text content loaded into editor.');
+    };
+    reader.onerror = () => {
+      showNotify('Failed to read file content.', 'error');
+    };
+    reader.readAsText(file);
+    e.target.value = '';
   };
 
   // Filtered inquiries list
@@ -576,6 +692,20 @@ export default function AdminDashboard() {
                 <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
               </svg>
             </span> Portfolio Editor
+          </button>
+          <button
+            className={`${styles.navItem} ${activeTab === 'rag' ? styles.navItemActive : ''}`}
+            onClick={() => handleTabClick('rag')}
+          >
+            <span className={styles.navIcon}>
+              <svg viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+            </span> Knowledge Base (RAG)
           </button>
           <button
             className={`${styles.navItem} ${activeTab === 'system' ? styles.navItemActive : ''}`}
@@ -1226,6 +1356,147 @@ export default function AdminDashboard() {
                         <div className={styles.logLine}>[SYSTEM] Port 3001 is listening for API calls...</div>
                         <div className={styles.logLine}>[API] Logged {sessions.length} chats and {inquiries.length} dynamic inquiry messages successfully.</div>
                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* TAB: KNOWLEDGE BASE (RAG) */}
+            <AnimatePresence mode="wait">
+              {activeTab === 'rag' && (
+                <motion.div
+                  initial={{ opacity: 0, y: 15 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  key="rag-tab"
+                  className={styles.tabContent}
+                >
+                  <div className={styles.ragManagerLayout}>
+                    <div className={styles.ragSidebarPanel}>
+                      <h2>Dynamic Knowledge Base (RAG) Documents</h2>
+                      <p className={styles.ragDescription}>
+                        Add documents to chunk and embed. The chatbot will dynamically search this data via MongoDB Atlas Vector Search to answer queries.
+                      </p>
+                      
+                      <div className={styles.docListArea}>
+                        {documents.length === 0 ? (
+                          <p className={styles.emptyText}>No documents found in knowledge base.</p>
+                        ) : (
+                          <div className={styles.docTableWrapper}>
+                            <table className={styles.docTable}>
+                              <thead>
+                                <tr>
+                                  <th>Document Title</th>
+                                  <th>Category</th>
+                                  <th>Chunks</th>
+                                  <th>Action</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {documents.map((doc, idx) => (
+                                  <tr key={idx}>
+                                    <td className={styles.docTitleCell} title={doc.title}>
+                                      {doc.title}
+                                    </td>
+                                    <td>
+                                      <span className={styles.categoryBadge}>
+                                        {doc.category}
+                                      </span>
+                                    </td>
+                                    <td>{doc.chunkCount}</td>
+                                    <td>
+                                      {doc.title === 'Static Portfolio' ? (
+                                        <span className={styles.lockedBadge}>Locked</span>
+                                      ) : (
+                                        <button
+                                          onClick={() => handleDeleteDocument(doc.title)}
+                                          className={styles.docDeleteBtn}
+                                        >
+                                          Delete
+                                        </button>
+                                      )}
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className={styles.ragFormPanel}>
+                      <h2>Upload / Edit Document Chunks</h2>
+                      <form onSubmit={handleSaveDocument} className={styles.ragForm}>
+                        <div className={styles.formGroup}>
+                          <label>Document Title</label>
+                          <input
+                            type="text"
+                            placeholder="e.g. My Detailed Resume, Project Specifications"
+                            value={ragTitle}
+                            onChange={(e) => setRagTitle(e.target.value)}
+                            className={styles.cyberInput}
+                            disabled={isSavingDoc}
+                            required
+                          />
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label>Knowledge Category</label>
+                          <select
+                            value={ragCategory}
+                            onChange={(e) => setRagCategory(e.target.value)}
+                            className={styles.cyberSelect}
+                            disabled={isSavingDoc}
+                          >
+                            <option value="General">General Bio</option>
+                            <option value="projects">Projects Info</option>
+                            <option value="skills">Technical Skills</option>
+                            <option value="experience">Professional Experience</option>
+                          </select>
+                        </div>
+
+                        <div className={styles.formGroup}>
+                          <label style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span>Document Body Content</span>
+                            <div className={styles.fileUploadWrapper}>
+                              <input
+                                type="file"
+                                accept=".txt"
+                                id="rag-file-input"
+                                style={{ display: 'none' }}
+                                onChange={handleDocFileUpload}
+                                disabled={isSavingDoc}
+                              />
+                              <label htmlFor="rag-file-input" className={styles.uploadTxtFileBtn}>
+                                📁 Load .txt File
+                              </label>
+                            </div>
+                          </label>
+                          <textarea
+                            rows={12}
+                            placeholder="Paste your resume details, skills lists, or specific project descriptions here..."
+                            value={ragContent}
+                            onChange={(e) => setRagContent(e.target.value)}
+                            className={styles.cyberTextarea}
+                            disabled={isSavingDoc}
+                            required
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className={styles.cyberSaveBtn}
+                          disabled={isSavingDoc}
+                        >
+                          {isSavingDoc ? (
+                            <div className={styles.btnLoadingRow}>
+                              <div className={styles.smallSpinner}></div> Chunking & Embedding...
+                            </div>
+                          ) : 'Submit to Vector DB'}
+                        </button>
+                      </form>
                     </div>
                   </div>
                 </motion.div>

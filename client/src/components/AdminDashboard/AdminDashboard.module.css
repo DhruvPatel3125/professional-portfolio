@@ -1807,4 +1807,166 @@
   }
 }
 
+/* RAG Documents Manager panel styles */
+.ragManagerLayout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 30px;
+  align-items: start;
+}
+
+.ragSidebarPanel, .ragFormPanel {
+  background: rgba(3, 15, 36, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 16px;
+  padding: 30px;
+  backdrop-filter: blur(10px);
+}
+
+.ragSidebarPanel h2, .ragFormPanel h2 {
+  font-size: 20px;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 10px 0;
+}
+
+.ragDescription {
+  font-size: 13.5px;
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin-bottom: 25px;
+}
+
+.docListArea {
+  margin-top: 10px;
+}
+
+.docTableWrapper {
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.docTable {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.docTable th, .docTable td {
+  padding: 14px 16px;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.docTable th {
+  background: rgba(255, 255, 255, 0.02);
+  color: #fff;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.docTitleCell {
+  color: #fff;
+  font-weight: 600;
+  max-width: 180px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.categoryBadge {
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  color: var(--color-accent-cyan);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.lockedBadge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  opacity: 0.8;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.docDeleteBtn {
+  background: rgba(255, 0, 127, 0.1);
+  border: 1px solid rgba(255, 0, 127, 0.25);
+  color: var(--color-accent-pink);
+  padding: 5px 12px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.docDeleteBtn:hover {
+  background: var(--color-accent-pink);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(255, 0, 127, 0.3);
+}
+
+.ragForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-top: 15px;
+}
+
+.cyberSelect {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.cyberSelect option {
+  background: #020813;
+  color: #fff;
+}
+
+.fileUploadWrapper {
+  display: inline-block;
+}
+
+.uploadTxtFileBtn {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--color-accent-cyan);
+  background: rgba(0, 242, 254, 0.08);
+  border: 1px solid rgba(0, 242, 254, 0.2);
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.uploadTxtFileBtn:hover {
+  background: var(--color-accent-cyan);
+  color: #020813;
+}
+
+/* Responsive adjust for RAG panel */
+@media screen and (max-width: 1200px) {
+  .ragManagerLayout {
+    grid-template-columns: 1fr;
+  }
+}
+
 

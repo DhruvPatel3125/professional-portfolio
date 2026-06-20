@@ -13,6 +13,11 @@ const knowledgeSchema = new mongoose.Schema({
     type: String,
     default: 'General',
     index: true
+  },
+  sourceDocument: {
+    type: String,
+    default: 'Static Portfolio',
+    index: true
   }
 });
 
