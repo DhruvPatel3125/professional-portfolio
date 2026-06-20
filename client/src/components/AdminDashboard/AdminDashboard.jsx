@@ -471,29 +471,50 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleDocFileUpload = (e) => {
+  const handleDocFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
     
-    if (!file.name.endsWith('.txt')) {
-      showNotify('Only .txt text files are supported.', 'error');
+    const nameLower = file.name.toLowerCase();
+    if (!nameLower.endsWith('.txt') && !nameLower.endsWith('.pdf')) {
+      showNotify('Only .pdf and .txt document files are supported.', 'error');
       return;
     }
     
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setRagContent(event.target.result || '');
-      if (!ragTitle.trim()) {
-        const titleWithoutExt = file.name.replace(/\.[^/.]+$/, "");
-        setRagTitle(titleWithoutExt);
+    if (file.size > 10 * 1024 * 1024) {
+      showNotify('File size exceeds the 10MB limit.', 'error');
+      return;
+    }
+    
+    const formData = new FormData();
+    formData.append('document', file);
+    formData.append('category', ragCategory);
+    
+    setIsSavingDoc(true);
+    try {
+      const response = await fetch(`${apiBaseUrl}/api/admin/documents/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': passcode
+        },
+        body: formData
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        showNotify(`Document "${data.title}" uploaded, chunked (${data.chunksCreated} chunks), and embedded successfully!`);
+        loadDashboardData(passcode);
+      } else {
+        const errorData = await response.json();
+        showNotify(errorData.error || 'Failed to upload and process document.', 'error');
       }
-      showNotify('File text content loaded into editor.');
-    };
-    reader.onerror = () => {
-      showNotify('Failed to read file content.', 'error');
-    };
-    reader.readAsText(file);
-    e.target.value = '';
+    } catch (error) {
+      console.error('File upload error:', error);
+      showNotify('Network error: unable to process document upload.', 'error');
+    } finally {
+      setIsSavingDoc(false);
+      e.target.value = '';
+    }
   };
 
   // Filtered inquiries list
@@ -1463,14 +1484,14 @@ export default function AdminDashboard() {
                             <div className={styles.fileUploadWrapper}>
                               <input
                                 type="file"
-                                accept=".txt"
+                                accept=".txt,.pdf"
                                 id="rag-file-input"
                                 style={{ display: 'none' }}
                                 onChange={handleDocFileUpload}
                                 disabled={isSavingDoc}
                               />
                               <label htmlFor="rag-file-input" className={styles.uploadTxtFileBtn}>
-                                📁 Load .txt File
+                                📁 Upload PDF / TXT
                               </label>
                             </div>
                           </label>

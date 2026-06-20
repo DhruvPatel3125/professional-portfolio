@@ -11,8 +11,16 @@ import {
 import {
   getDocuments,
   addDocument,
-  deleteDocument
+  deleteDocument,
+  uploadDocument
 } from '../controllers/ragController.js';
+import multer from 'multer';
+
+const storage = multer.memoryStorage();
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB limit
+});
 
 const router = express.Router();
 
@@ -37,5 +45,6 @@ router.get('/sessions/:sessionId', getSessionConversation);
 router.get('/documents', getDocuments);
 router.post('/documents', addDocument);
 router.delete('/documents/:title', deleteDocument);
+router.post('/documents/upload', upload.single('document'), uploadDocument);
 
 export default router;

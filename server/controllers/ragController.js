@@ -1,5 +1,6 @@
 import Knowledge from '../models/Knowledge.js';
 import { getEmbedding } from '../services/embeddingService.js';
+import { PDFParse } from 'pdf-parse';
 
 /**
  * Helper to split a large text document into smaller semantic chunks.
@@ -170,5 +171,78 @@ export async function deleteDocument(req, res) {
   } catch (error) {
     console.error('[RagController] Error deleting document:', error);
     return res.status(500).json({ error: 'Failed to purge document records.' });
+  }
+}
+
+/**
+ * POST /api/admin/documents/upload
+ * Handles PDF and TXT file uploads, parses their text content, chunks, and embeds them.
+ */
+export async function uploadDocument(req, res) {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded.' });
+    }
+    
+    const { category } = req.body;
+    const originalName = req.file.originalname;
+    const extension = originalName.split('.').pop().toLowerCase();
+    const title = originalName.replace(/\.[^/.]+$/, ""); // strip extension for default title
+    
+    if (title === 'Static Portfolio') {
+      return res.status(400).json({ error: 'Cannot overwrite default portfolio data.' });
+    }
+    
+    let textContent = '';
+    
+    if (extension === 'pdf') {
+      console.log(`[RagController] Parsing PDF document: "${originalName}"...`);
+      const parser = new PDFParse({ data: req.file.buffer });
+      const parsedPdf = await parser.getText();
+      textContent = parsedPdf.text;
+      await parser.destroy();
+    } else if (extension === 'txt') {
+      console.log(`[RagController] Parsing TXT document: "${originalName}"...`);
+      textContent = req.file.buffer.toString('utf8');
+    } else {
+      return res.status(400).json({ error: 'Unsupported file type. Only .pdf and .txt are supported.' });
+    }
+    
+    if (!textContent || !textContent.trim()) {
+      return res.status(400).json({ error: 'The uploaded file does not contain any copyable text.' });
+    }
+    
+    console.log(`[RagController] Chunking document text for "${title}"...`);
+    const chunks = chunkText(textContent.trim());
+    console.log(`[RagController] Split "${title}" into ${chunks.length} chunks.`);
+    
+    if (chunks.length === 0) {
+      return res.status(400).json({ error: 'Failed to extract text chunks from uploaded file.' });
+    }
+    
+    // Clean up old version matching this title
+    await Knowledge.deleteMany({ sourceDocument: title });
+    
+    // Embed sequentially
+    for (let i = 0; i < chunks.length; i++) {
+      const chunkTextContent = chunks[i];
+      const embedding = await getEmbedding(chunkTextContent);
+      
+      const knowledgeDoc = new Knowledge({
+        text: chunkTextContent,
+        embedding: embedding,
+        category: category || 'General',
+        sourceDocument: title
+      });
+      
+      await knowledgeDoc.save();
+    }
+    
+    console.log(`[RagController] Successfully embedded and saved file document "${title}".`);
+    return res.json({ success: true, title, chunksCreated: chunks.length });
+    
+  } catch (error) {
+    console.error('[RagController] Error uploading and parsing document:', error);
+    return res.status(500).json({ error: `Failed to process document file: ${error.message}` });
   }
 }
