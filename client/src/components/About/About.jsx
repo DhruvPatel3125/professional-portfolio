@@ -52,7 +52,7 @@ export default function About({ aboutData }) {
       whileInView="visible"
       viewport={{ once: true, amount: 0.12 }}
     >
-      <h2 className={style.title}>System // Diagnostics</h2>
+      <h2 className={style.title}>About Me</h2>
       
       <div className={style.contentGrid}>
         
@@ -157,10 +157,10 @@ export default function About({ aboutData }) {
                   </p>
                   
                   <div className={style.logsContainer}>
-                    <div className={style.logRow}><span className={style.okLabel}>[OK]</span> BOOT_SEQUENCE: COMPLETE</div>
-                    <div className={style.logRow}><span className={style.okLabel}>[OK]</span> DB_CLUSTER: READY // VADODARA_REGION</div>
-                    <div className={style.logRow}><span className={style.okLabel}>[OK]</span> REALTIME_SOCKETS: MONITORING_ACTIVE</div>
-                    <div className={style.logRow}><span className={style.infoLabel}>[INFO]</span> STATUS: ACTIVE_FOR_HIRING</div>
+                    <div className={style.logRow}><span className={style.okLabel}>[ACTIVE]</span> Core System: Online & Active</div>
+                    <div className={style.logRow}><span className={style.okLabel}>[LOCATION]</span> Surat, Gujarat, India</div>
+                    <div className={style.logRow}><span className={style.okLabel}>[READY]</span> Web Services: Live Connection Active</div>
+                    <div className={style.logRow}><span className={style.infoLabel}>[STATUS]</span> Open to Professional Opportunities</div>
                   </div>
                 </div>
               )}
@@ -190,13 +190,13 @@ export default function About({ aboutData }) {
                 <div className={style.tabContent}>
                   <div className={style.consoleInput}>$ get-infrastructure --status</div>
                   <div className={style.infraCodeBlock}>
-                    <div className={style.infraRow}><span className={style.blueAccent}>SOCKET_POOL:</span> [CONNECT: OK] 100/100 channels active</div>
-                    <div className={style.infraRow}><span className={style.blueAccent}>BACKGROUND_WORKERS:</span> [REDIS_BULL_WORKERS: STANDBY]</div>
-                    <div className={style.infraRow}><span className={style.blueAccent}>SECURITY:</span> [JWT_AUTH: PARALLEL] cryptographically signed</div>
-                    <div className={style.infraRow}><span className={style.blueAccent}>AGGREGATIONS:</span> [MONGO_PIPELINE: MEMORY_OPTIMIZED]</div>
+                    <div className={style.infraRow}><span className={style.blueAccent}>Real-time Sync:</span> WebSocket Channels Active (100% capacity)</div>
+                    <div className={style.infraRow}><span className={style.blueAccent}>Queue Manager:</span> Redis & Bull Schedulers Standby</div>
+                    <div className={style.infraRow}><span className={style.blueAccent}>Auth Security:</span> Encrypted JWT Authorization</div>
+                    <div className={style.infraRow}><span className={style.blueAccent}>Data Pipelines:</span> Memory-Optimized MongoDB Aggregations</div>
                   </div>
                   <div className={style.systemStatsRow}>
-                    SYSTEM_STABILITY: <span className={style.okText}>99.98% uptime</span>
+                    SYSTEM_STABILITY: <span className={style.okText}>99.98% Average Uptime</span>
                   </div>
                 </div>
               )}

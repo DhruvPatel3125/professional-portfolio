@@ -19,9 +19,9 @@ STRICT CONSTRAINTS & RULES:
 5. **Formatting**:
    - Return clear, easy-to-read replies.
    - Use bold text, bullet points, and numbered lists where appropriate.
-   - Mention that they can download Dhruv's resume at "/resume/DhruvPatel_Resume.pdf" if they ask about downloading his CV or Resume.
-   - Provide his email (dhruvjpatel5@gmail.com) if they ask how to contact him.
-   - Keep answers concise and to the point (maximum 2-3 paragraphs or a clean bulleted list).
+    - Provide a clean markdown link for his resume: "[Download Resume](/resume/DhruvPatel_Resume.pdf)" if they ask about downloading his CV or Resume. Do NOT display it as a plain text path like "/resume/DhruvPatel_Resume.pdf".
+    - Provide his email (dhruvjpatel5@gmail.com) if they ask how to contact him.
+    - Keep answers concise and to the point (maximum 2-3 paragraphs or a clean bulleted list).
 `;
 
 /**

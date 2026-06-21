@@ -14,7 +14,7 @@ function hexToRgb(hex) {
     const match = hex.match(/\d+/g);
     return match ? `${match[0]}, ${match[1]}, ${match[2]}` : "255,255,255";
   }
-  
+
   const cleanHex = hex.trim().replace("#", "");
   let r, g, b;
   if (cleanHex.length === 3) {
@@ -93,7 +93,7 @@ export default function ParticleBackground({ theme }) {
 
       const particles = particlesRef.current;
       const { x: mx, y: my } = mouse.current;
-      
+
       const themeColors = themeColorsRef.current;
       const rgbColors = rgbColorsRef.current;
 
@@ -147,8 +147,8 @@ export default function ParticleBackground({ theme }) {
         // pulsing opacity
         p.pulsePhase += p.pulseSpeed;
         const pulse = Math.sin(p.pulsePhase) * 0.2 + 0.8;
-        const currentOpacity = p.isSpark 
-          ? p.life * p.opacity 
+        const currentOpacity = p.isSpark
+          ? p.life * p.opacity
           : p.opacity * pulse;
 
         const rgb = rgbColors[p.colorIndex];

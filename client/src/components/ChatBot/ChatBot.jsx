@@ -58,8 +58,20 @@ function parseMarkdown(text) {
 
   html = processedLines.join('\n');
 
-  // Links: [text](url) -> <a href="url" target="_blank" rel="noopener noreferrer">text</a>
-  html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #00f2fe; text-decoration: underline;">$1</a>');
+  // Links: [text](url) -> custom button/link
+  html = html.replace(/\[(.*?)\]\((.*?)\)/g, (match, text, url) => {
+    if (url.toLowerCase().includes('resume') || url.toLowerCase().endsWith('.pdf')) {
+      return `<a href="${url}" download target="_blank" rel="noopener noreferrer" style="display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, var(--color-primary), var(--color-primary-dark)); border: 1px solid rgba(255, 255, 255, 0.15); color: #fff !important; padding: 8px 16px; border-radius: 8px; text-decoration: none; font-weight: 600; margin-top: 8px; box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3); transition: all 0.2s ease;">
+        <svg stroke="currentColor" fill="none" stroke-width="2" viewBox="0 0 24 24" height="14" width="14" xmlns="http://www.w3.org/2000/svg" style="vertical-align: middle;">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="7 10 12 15 17 10"></polyline>
+          <line x1="12" y1="15" x2="12" y2="3"></line>
+        </svg>
+        ${text}
+      </a>`;
+    }
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #00f2fe; text-decoration: underline;">${text}</a>`;
+  });
 
   // Paragraphs
   html = html.replace(/\n\n/g, '</p><p style="margin-bottom: 8px;">');
@@ -67,6 +79,41 @@ function parseMarkdown(text) {
 
   return `<p style="margin: 0; padding: 0;">${html}</p>`;
 }
+
+// Cleans up Markdown tags and formats specific phrases for natural-sounding speech
+function stripMarkdownForSpeech(text) {
+  if (!text) return '';
+  let cleanText = text;
+
+  // Remove markdown code blocks (e.g. ```javascript ... ```)
+  cleanText = cleanText.replace(/```[\s\S]*?```/g, '');
+
+  // Replace links: [text](url) -> text
+  cleanText = cleanText.replace(/\[(.*?)\]\((.*?)\)/g, '$1');
+
+  // Remove bold / italic markers
+  cleanText = cleanText.replace(/\*\*([^*]+)\*\*/g, '$1');
+  cleanText = cleanText.replace(/\*([^*]+)\*/g, '$1');
+  cleanText = cleanText.replace(/__([^_]+)__/g, '$1');
+  cleanText = cleanText.replace(/_([^_]+)_/g, '$1');
+
+  // Remove inline code ticks
+  cleanText = cleanText.replace(/`([^`]+)`/g, '$1');
+
+  // Remove headers markers: #, ##, ###
+  cleanText = cleanText.replace(/^[#]+\s*(.*?)$/gm, '$1');
+
+  // Remove list bullet points: * or - or digit. at start of line
+  cleanText = cleanText.replace(/^[\s]*[-*+]\s+/gm, '');
+  cleanText = cleanText.replace(/^[\s]*\d+\.\s+/gm, '');
+
+  // Replace specific file paths / links with speech-friendly text
+  cleanText = cleanText.replace(/\/resume\/DhruvPatel_Resume\.pdf/g, "Dhruv Patel's resume PDF");
+  cleanText = cleanText.replace(/dhruvjpatel5@gmail.com/g, 'dhruv j patel at gmail dot com');
+
+  return cleanText.trim();
+}
+
 
 function getDeviceMeta() {
   const userAgent = navigator.userAgent;
@@ -178,6 +225,134 @@ export default function ChatBot({ aboutData }) {
   ]);
 
   const messagesEndRef = useRef(null);
+  
+  // Voice feature states and refs
+  const [isMuted, setIsMuted] = useState(true);
+  const [isRecording, setIsRecording] = useState(false);
+  const recognitionRef = useRef(null);
+  const isMutedRef = useRef(isMuted);
+
+  // Sync mute state ref
+  useEffect(() => {
+    isMutedRef.current = isMuted;
+    if (isMuted && window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+  }, [isMuted]);
+
+  // Cancel synthesis & recording when chat is closed or minimized
+  useEffect(() => {
+    if (!isOpen) {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // ignore already stopped recognition
+        }
+      }
+      setIsRecording(false);
+    }
+  }, [isOpen]);
+
+  // Clean up synthesis and recognition on component unmount
+  useEffect(() => {
+    return () => {
+      if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {
+          // ignore
+        }
+      }
+    };
+  }, []);
+
+  const speakResponse = (text) => {
+    if (!window.speechSynthesis) return;
+
+    // Cancel current speech before reading next response
+    window.speechSynthesis.cancel();
+
+    if (isMutedRef.current) return;
+
+    const cleanText = stripMarkdownForSpeech(text);
+    if (!cleanText) return;
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+
+    // Use default browser voice or first available English voice
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const startSpeechRecognition = () => {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert("Speech recognition is not supported in this browser. Please try Google Chrome, Microsoft Edge, or Safari.");
+      return;
+    }
+
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
+    // Auto-unmute when the user actively chooses to talk to the bot
+    setIsMuted(false);
+
+    const rec = new SpeechRecognition();
+    rec.continuous = false;
+    rec.interimResults = false;
+    rec.lang = 'en-US';
+
+    rec.onstart = () => {
+      setIsRecording(true);
+    };
+
+    rec.onresult = (event) => {
+      const transcript = event.results[0][0].transcript;
+      if (transcript && transcript.trim()) {
+        handleSendMessage(transcript);
+      }
+    };
+
+    rec.onerror = (event) => {
+      console.error('Speech recognition error:', event.error);
+      setIsRecording(false);
+    };
+
+    rec.onend = () => {
+      setIsRecording(false);
+    };
+
+    try {
+      rec.start();
+      recognitionRef.current = rec;
+    } catch (err) {
+      console.error('Failed to start speech recognition:', err);
+      setIsRecording(false);
+    }
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch (e) {}
+      }
+      setIsRecording(false);
+    } else {
+      startSpeechRecognition();
+    }
+  };
+
 
   // Synchronize changes to sessionStorage and cleanup legacy localStorage key
   useEffect(() => {
@@ -261,6 +436,11 @@ export default function ChatBot({ aboutData }) {
     const text = textToSend || inputText;
     if (!text.trim()) return;
 
+    // Stop speaking immediately when a new message is sent
+    if (window.speechSynthesis) {
+      window.speechSynthesis.cancel();
+    }
+
     // Add user message
     const userMsg = {
       role: 'user',
@@ -312,6 +492,9 @@ export default function ChatBot({ aboutData }) {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       }]);
       setSuggestions(data.suggestions || []);
+      
+      // Speak the response using Speech Synthesis
+      speakResponse(data.reply);
       
     } catch (error) {
       console.error('Error sending message:', error);
@@ -378,6 +561,26 @@ export default function ChatBot({ aboutData }) {
             </div>
             
             <div className={styles.headerActions}>
+              {/* Mute / Unmute Button */}
+              <button 
+                className={`${styles.actionBtn} ${!isMuted ? styles.actionBtnActive : ''}`} 
+                onClick={() => setIsMuted(!isMuted)} 
+                title={isMuted ? "Unmute Voice Responses" : "Mute Voice Responses"}
+              >
+                {isMuted ? (
+                  <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                    <line x1="23" y1="9" x2="17" y2="15"></line>
+                    <line x1="17" y1="9" x2="23" y2="15"></line>
+                  </svg>
+                ) : (
+                  <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                  </svg>
+                )}
+              </button>
+
               {/* Download Resume Button */}
               <button 
                 className={styles.actionBtn} 
@@ -456,16 +659,41 @@ export default function ChatBot({ aboutData }) {
               <input
                 type="text"
                 className={styles.chatInput}
-                placeholder="Ask something about Dhruv..."
+                placeholder={isRecording ? "Listening... Speak now!" : "Ask something about Dhruv..."}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={handleKeyPress}
-                disabled={isTyping}
+                disabled={isTyping || isRecording}
               />
+              
+              {/* Voice Input Microphone Button */}
+              {typeof window !== 'undefined' && !!(window.SpeechRecognition || window.webkitSpeechRecognition) && (
+                <button
+                  type="button"
+                  className={`${styles.micBtn} ${isRecording ? styles.micBtnActive : ''}`}
+                  onClick={toggleRecording}
+                  disabled={isTyping}
+                  title={isRecording ? "Stop Listening" : "Ask by Voice"}
+                >
+                  {isRecording ? (
+                    <svg stroke="currentColor" fill="currentColor" strokeWidth="0" viewBox="0 0 24 24" height="20" width="20" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"></path>
+                    </svg>
+                  ) : (
+                    <svg stroke="currentColor" fill="none" strokeWidth="2" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                      <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                      <line x1="12" y1="19" x2="12" y2="23"></line>
+                      <line x1="8" y1="23" x2="16" y2="23"></line>
+                    </svg>
+                  )}
+                </button>
+              )}
+
               <button 
                 className={styles.sendBtn} 
                 onClick={() => handleSendMessage()}
-                disabled={!inputText.trim() || isTyping}
+                disabled={!inputText.trim() || isTyping || isRecording}
                 title="Send Message"
               >
                 <svg stroke="currentColor" fill="none" strokeWidth="2.5" viewBox="0 0 24 24" height="18" width="18" xmlns="http://www.w3.org/2000/svg">

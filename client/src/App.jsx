@@ -18,7 +18,6 @@ import 'lenis/dist/lenis.css';
 function App() {
   const [scrollProgress, setScrollProgress] = useState(0);
   const [isAdminView, setIsAdminView] = useState(window.location.hash === '#admin');
-  const [scanlinesActive, setScanlinesActive] = useState(true); // Default to ON for cyber immersion
   const [theme, setTheme] = useState("cyan");
   const [aboutData, setAboutData] = useState(null);
 
@@ -116,15 +115,9 @@ function App() {
   return (
     <div className={style.App}>
       <CustomCursor />
-      {scanlinesActive && <div className="crt-overlay" />}
-      
-      {/* HUD overlays and controllers */}
-      <HUD 
-        theme={theme} 
-        setTheme={setTheme} 
-        scanlinesActive={scanlinesActive} 
-        setScanlinesActive={setScanlinesActive} 
-      />
+
+      {/* HUD overlays */}
+      <HUD />
 
       {/* Scroll indicator bar */}
       <div
